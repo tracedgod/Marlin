@@ -128,8 +128,13 @@ uint8_t CardReader::workDirDepth;
   DiskIODriver_USBFlash CardReader::media_driver_usbFlash;
 #endif
 
-#if NEED_SD2CARD_SDIO || NEED_SD2CARD_SPI
-  CardReader::sdcard_driver_t CardReader::media_driver_sdcard;
+#if ENABLED(FF_MULTI_SD)
+  CardReader::sdcard_driver_internal CardReader::media_driver_internal_sdcard;
+  CardReader::sdcard_driver_external CardReader::media_driver_external_sdcard;
+#else
+  #if NEED_SD2CARD_SDIO || NEED_SD2CARD_SPI
+    CardReader::sdcard_driver_t CardReader::media_driver_sdcard;
+  #endif
 #endif
 
 DiskIODriver* CardReader::driver = nullptr;
@@ -146,10 +151,18 @@ uint32_t CardReader::filesize, CardReader::sdpos;
 
 CardReader::CardReader() {
   changeMedia(&
-    #if HAS_USB_FLASH_DRIVE && !SHARED_VOLUME_IS(SD_ONBOARD)
-      media_driver_usbFlash
+    #if ENABLED(FF_MULTI_SD)
+      #if SHARED_VOLUME_IS(SD_ONBOARD) && !SHARED_VOLUME_IS(SD_EXTERNAL)
+        media_driver_internal_sdcard
+      #else
+        media_driver_external_sdcard
+      #endif
     #else
-      media_driver_sdcard
+      #if HAS_USB_FLASH_DRIVE && !SHARED_VOLUME_IS(SD_ONBOARD)
+        media_driver_usbFlash
+      #else
+        media_driver_sdcard
+      #endif
     #endif
   );
 
@@ -499,6 +512,9 @@ void CardReader::manage_media() {
   prev_stat = stat;                 // Change now to prevent re-entry in safe_delay
 
   if (stat) {                       // Media Inserted
+#if ENABLED( FF_FLASHAIR_FIX )
+      safe_delay(300);
+#endif
     safe_delay(500);                // Some boards need a delay to get settled
 
     // Try to mount the media (only later with SD_IGNORE_AT_STARTUP)
@@ -581,7 +597,7 @@ void CardReader::startOrResumeFilePrinting() {
 //
 void CardReader::endFilePrintNow(TERN_(SD_RESORT, const bool re_sort/*=false*/)) {
   TERN_(ADVANCED_PAUSE_FEATURE, did_pause_print = 0);
-  TERN_(HAS_DWIN_E3V2_BASIC, HMI_flag.print_finish = flag.sdprinting);
+  TERN_(DWIN_CREALITY_LCD, HMI_flag.print_finish = flag.sdprinting);
   flag.abort_sd_printing = false;
   if (isFileOpen()) file.close();
   TERN_(SD_RESORT, if (re_sort) presort());

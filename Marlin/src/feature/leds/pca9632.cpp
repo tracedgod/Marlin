@@ -31,7 +31,12 @@
 
 #include "pca9632.h"
 #include "leds.h"
+#if ENABLED(PCA9632_SOFT_I2C)
+#include <SlowSoftWire.h>
+SlowSoftWire Wire = SlowSoftWire(PCA9632_I2C_SDA, PCA9632_I2C_SCK, true);
+#else
 #include <Wire.h>
+#endif
 
 #define PCA9632_MODE1_VALUE   0b00000001 //(ALLCALL)
 #define PCA9632_MODE2_VALUE   0b00010101 //(DIMMING, INVERT, CHANGE ON STOP,TOTEM)
@@ -81,7 +86,9 @@
 #define LED_ON    0x01
 #define LED_PWM   0x02
 
+#ifndef PCA9632_ADDRESS
 #define PCA9632_ADDRESS 0b01100000
+#endif
 
 byte PCA_init = 0;
 

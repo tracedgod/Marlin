@@ -630,6 +630,10 @@ namespace Language_fr {
   LSTR MSG_CALIBRATION_COMPLETED          = _UxGT("Calibration terminée");
   LSTR MSG_CALIBRATION_FAILED             = _UxGT("Échec de l'étalonnage");
 
+    #if ENABLED(FF_MULTI_SD)
+    LSTR MSG_SD_INTERNAL                    = _UxGT("Carte SD interne");  // SDIO
+    LSTR MSG_SD_EXTERNAL                    = _UxGT("Carte SD externe");  // SPI
+  #endif
   LSTR MSG_SD_CARD                        = _UxGT("Carte SD");
   LSTR MSG_USB_DISK                       = _UxGT("Clé USB");
 }

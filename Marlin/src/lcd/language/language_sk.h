@@ -812,6 +812,10 @@ namespace Language_sk {
 
   LSTR MSG_DRIVER_BACKWARD                = _UxGT(" spätný chod ovl.");
 
+  #if ENABLED(FF_MULTI_SD)
+    LSTR MSG_SD_INTERNAL                    = _UxGT("Interná SD karta");  // SDIO
+    LSTR MSG_SD_EXTERNAL                    = _UxGT("Externá SD karta");  // SPI
+  #endif
   LSTR MSG_SD_CARD                        = _UxGT("SD karta");
   LSTR MSG_USB_DISK                       = _UxGT("USB disk");
 

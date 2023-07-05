@@ -546,6 +546,9 @@
   #if DISABLED(USB_FLASH_DRIVE_SUPPORT) || BOTH(MULTI_VOLUME, VOLUME_SD_ONBOARD)
     #if ENABLED(SDIO_SUPPORT)
       #define NEED_SD2CARD_SDIO 1
+      #if ENABLED(FF_MULTI_SD)
+        #define NEED_SD2CARD_SPI 1    // we need both SDIO + SPI interfaces for both cards to work
+      #endif
     #else
       #define NEED_SD2CARD_SPI 1
     #endif
@@ -2352,7 +2355,7 @@
 //
 // ADC Temp Sensors (Thermistor or Thermocouple with amplifier ADC interface)
 //
-#define HAS_ADC_TEST(P) (TEMP_SENSOR(P) && PIN_EXISTS(TEMP_##P) && !TEMP_SENSOR_IS_MAX_TC(P) && !TEMP_SENSOR_##P##_IS_DUMMY)
+#define HAS_ADC_TEST(P) (PIN_EXISTS(TEMP_##P) && TEMP_SENSOR_##P != 0 && NONE(TEMP_SENSOR_##P##_IS_MAX_TC, TEMP_SENSOR_##P##_IS_ADS1118, TEMP_SENSOR_##P##_IS_DUMMY))
 #if HOTENDS > 0 && HAS_ADC_TEST(0)
   #define HAS_TEMP_ADC_0 1
 #endif
@@ -2396,7 +2399,7 @@
   #define HAS_TEMP_ADC_REDUNDANT 1
 #endif
 
-#define HAS_TEMP(N) (TEMP_SENSOR_IS_MAX_TC(N) || EITHER(HAS_TEMP_ADC_##N, TEMP_SENSOR_##N##_IS_DUMMY))
+#define HAS_TEMP(N) (TEMP_SENSOR_IS_MAX_TC(N) || ANY(HAS_TEMP_ADC_##N, TEMP_SENSOR_##N##_IS_ADS1118, TEMP_SENSOR_##N##_IS_DUMMY))
 #if HAS_HOTEND && HAS_TEMP(0)
   #define HAS_TEMP_HOTEND 1
 #endif
@@ -2472,6 +2475,7 @@
   #define BED_MAX_TARGET (BED_MAXTEMP - (BED_OVERSHOOT))
 #else
   #undef PIDTEMPBED
+  #undef PREHEAT_BEFORE_LEVELING
 #endif
 
 #if HAS_TEMP_COOLER && PIN_EXISTS(COOLER)

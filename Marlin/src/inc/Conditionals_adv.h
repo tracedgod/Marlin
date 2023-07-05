@@ -79,6 +79,9 @@
   #define SERVO_DELAY { 50 }
 #endif
 
+#if !HAS_BED_PROBE
+  #undef BABYSTEP_ZPROBE_OFFSET
+#endif
 #if !HAS_STOWABLE_PROBE
   #undef PROBE_DEPLOY_STOW_MENU
 #endif
@@ -204,6 +207,8 @@
   #define TEMP_SENSOR_0_IS_AD8495 1
 #elif TEMP_SENSOR_0 == -1
   #define TEMP_SENSOR_0_IS_AD595 1
+#elif TEMP_SENSOR_0 == -666
+  #define TEMP_SENSOR_0_IS_ADS1118 1
 #elif TEMP_SENSOR_0 > 0
   #define TEMP_SENSOR_0_IS_THERMISTOR 1
   #if TEMP_SENSOR_0 == 1000
@@ -250,6 +255,8 @@
   #define TEMP_SENSOR_1_IS_AD8495 1
 #elif TEMP_SENSOR_1 == -1
   #define TEMP_SENSOR_1_IS_AD595 1
+#elif TEMP_SENSOR_1 == -666
+  #define TEMP_SENSOR_1_IS_ADS1118 1
 #elif TEMP_SENSOR_1 > 0
   #define TEMP_SENSOR_1_IS_THERMISTOR 1
   #if TEMP_SENSOR_1 == 1000
@@ -390,7 +397,29 @@
 #if TEMP_SENSOR_0_IS_MAX31865 || TEMP_SENSOR_1_IS_MAX31865 || TEMP_SENSOR_2_IS_MAX31865 || TEMP_SENSOR_REDUNDANT_IS_MAX31865
   #define HAS_MAX31865 1
 #endif
+#if TEMP_SENSOR_2 == -4
+  #define TEMP_SENSOR_2_IS_AD8495 1
+#elif TEMP_SENSOR_2 == -3
+  #error "MAX31855 Thermocouples (-3) not supported for TEMP_SENSOR_2."
+#elif TEMP_SENSOR_2 == -2
+  #error "MAX6675 Thermocouples (-2) not supported for TEMP_SENSOR_2."
+#elif TEMP_SENSOR_2 == -1
+  #define TEMP_SENSOR_2_IS_AD595 1
+#elif TEMP_SENSOR_2 > 0
+  #define TEMP_SENSOR_2_IS_THERMISTOR 1
+  #if TEMP_SENSOR_2 == 1000
+    #define TEMP_SENSOR_2_IS_CUSTOM 1
+  #elif TEMP_SENSOR_2 == 998 || TEMP_SENSOR_2 == 999
+    #define TEMP_SENSOR_2_IS_DUMMY 1
+  #endif
+#else
+  #undef HEATER_2_MINTEMP
+  #undef HEATER_2_MAXTEMP
+#endif
 
+#if TEMP_SENSOR_0_IS_ADS1118 || TEMP_SENSOR_1_IS_ADS1118
+  #define HAS_ADS1118 1
+#endif
 #if TEMP_SENSOR_3 == -4
   #define TEMP_SENSOR_3_IS_AD8495 1
 #elif TEMP_SENSOR_3 == -3

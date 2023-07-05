@@ -912,6 +912,10 @@ namespace Language_uk {
 
   LSTR MSG_DRIVER_BACKWARD                  = _UxGT(" драйвер назад");
 
+  #if ENABLED(FF_MULTI_SD)
+    LSTR MSG_SD_INTERNAL                    = _UxGT("Внутрішня карта SD");  // SDIO
+    LSTR MSG_SD_EXTERNAL                    = _UxGT("Зовнішня карта SD");  // SPI
+  #endif
   LSTR MSG_SD_CARD                          = _UxGT("SD Картка");
   LSTR MSG_USB_DISK                         = _UxGT("USB Диск");
 }

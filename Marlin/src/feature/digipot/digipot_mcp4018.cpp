@@ -29,6 +29,10 @@
 #include <Stream.h>
 #include <SlowSoftI2CMaster.h>  // https://github.com/felias-fogg/SlowSoftI2CMaster
 
+#if ENABLED(M907_PROTECTION)
+  #include "../../MarlinCore.h"
+#endif
+
 // Settings for the I2C based DIGIPOT (MCP4018) based on WT150
 
 #ifndef DIGIPOT_A4988_Rsx
@@ -46,6 +50,13 @@
 
 static byte current_to_wiper(const float current) {
   const int16_t value = TERN(DIGIPOT_USE_RAW_VALUES, current, CEIL(current * DIGIPOT_A4988_FACTOR));
+
+#if ENABLED(M907_PROTECTION)
+  /* protect printer from old original FF firmware G-Codes */
+  if( current > DIGIPOT_A4988_MAX_CURRENT ) {
+    kill(F("M907 overcurrent!"), nullptr, true );
+  }
+#endif
   return byte(constrain(value, 0, DIGIPOT_MCP4018_MAX_VALUE));
 }
 

@@ -828,6 +828,10 @@ namespace Language_it {
 
   LSTR MSG_DRIVER_BACKWARD                = _UxGT(" driver invertito");
 
+  #if ENABLED(FF_MULTI_SD)
+    LSTR MSG_SD_INTERNAL                    = _UxGT("Scheda SD interna");  // SDIO
+    LSTR MSG_SD_EXTERNAL                    = _UxGT("Scheda SD esterna");  // SPI
+  #endif
   LSTR MSG_SD_CARD                        = _UxGT("Scheda SD");
   LSTR MSG_USB_DISK                       = _UxGT("Disco USB");
 

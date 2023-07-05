@@ -124,6 +124,26 @@ void TFT_FSMC::Init() {
 }
 
 uint32_t TFT_FSMC::GetID() {
+#if ENABLED( USE_FLASHFORGE_TFT )
+  uint32_t id1, id2, id3;
+  WriteReg( 0xDA );
+  (void)LCD->RAM;
+  id1 = LCD->RAM;
+
+  WriteReg( 0xDB );
+  (void)LCD->RAM;
+  id2 = LCD->RAM;
+
+  WriteReg( 0xDC );
+  (void)LCD->RAM;
+  id3 = LCD->RAM;
+  
+  if ( id1 == 0x40 && !id2 && !id3 )
+    return 0x4802;
+  if ( id1 == 0x54 && id2 == 0x80 && id3 == 0x66 )
+    return 0x9488;
+  return 0x4802;
+#else
   uint32_t id;
   WriteReg(0);
   id = LCD->RAM;
@@ -133,6 +153,7 @@ uint32_t TFT_FSMC::GetID() {
   if ((id & 0xFFFF) == 0 || (id & 0xFFFF) == 0xFFFF)
     id = ReadID(LCD_READ_ID4);
   return id;
+#endif
 }
 
 uint32_t TFT_FSMC::ReadID(tft_data_t Reg) {
