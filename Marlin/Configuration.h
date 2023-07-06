@@ -722,8 +722,13 @@
 
 #if ENABLED(PIDTEMP)
   //#define PID_DEBUG             // Print PID debug data to the serial port. Use 'M303 D' to toggle activation.
-    #define PID_PARAMS_PER_HOTEND // Use separate PID parameters for each extruder (useful for mismatched extruders)
-                                  // Set/get with G-code: M301 E[extruder number, 0-2]
+    #if EXTRUDERS > 1             // We want seperate PID params per hotend, but only if there is more than 1 extruder (obviously!)
+      #define PID_PARAMS_PER_HOTEND // Use separate PID parameters for each extruder (useful for mismatched extruders)
+    #else                          // Set/get with G-code: M301 E[extruder number, 0-2]
+      #define DEFAULT_Kp  34.22
+      #define DEFAULT_Ki   2.19
+      #define DEFAULT_Kd 133.48
+    #endif
 
   #if ENABLED(PID_PARAMS_PER_HOTEND)
     // Specify up to one value per hotend here, according to your setup.
@@ -733,9 +738,9 @@
     #define DEFAULT_Kd_LIST { 133.48, 133.48 }
   #endif
 #else
-  #define DEFAULT_Kp  33.00
-  #define DEFAULT_Ki   2.25
-  #define DEFAULT_Kd 106.70
+  #define DEFAULT_Kp  34.22
+  #define DEFAULT_Ki   2.19
+  #define DEFAULT_Kd 133.48
 #endif
 
 /**
