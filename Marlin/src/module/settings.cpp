@@ -76,7 +76,6 @@
   #include "../lcd/extui/ui_api.h"
 #elif ENABLED(DWIN_LCD_PROUI)
   #include "../lcd/e3v2/proui/dwin.h"
-  #include "../lcd/e3v2/proui/bedlevel_tools.h"
 #elif ENABLED(DWIN_CREALITY_LCD_JYERSUI)
   #include "../lcd/e3v2/jyersui/dwin.h"
 #endif
@@ -184,7 +183,7 @@
 typedef struct { uint16_t MAIN_AXIS_NAMES, X2, Y2, Z2, Z3, Z4 REPEAT(E_STEPPERS, _EN_ITEM); } per_stepper_uint16_t;
 typedef struct { uint32_t MAIN_AXIS_NAMES, X2, Y2, Z2, Z3, Z4 REPEAT(E_STEPPERS, _EN_ITEM); } per_stepper_uint32_t;
 typedef struct {  int16_t MAIN_AXIS_NAMES, X2, Y2, Z2, Z3, Z4;                              } mot_stepper_int16_t;
-typedef struct {     bool NUM_AXIS_LIST(X:1, Y:1, Z:1, I:1, J:1, K:1), X2:1, Y2:1, Z2:1, Z3:1, Z4:1 REPEAT(E_STEPPERS, _EN1_ITEM); } per_stepper_bool_t;
+typedef struct {     bool LINEAR_AXIS_LIST(X:1, Y:1, Z:1, I:1, J:1, K:1), X2:1, Y2:1, Z2:1, Z3:1, Z4:1 REPEAT(E_STEPPERS, _EN1_ITEM); } per_stepper_bool_t;
 
 #undef _EN_ITEM
 
@@ -212,7 +211,7 @@ typedef struct SettingsDataStruct {
   //
   // DISTINCT_E_FACTORS
   //
-  uint8_t e_factors;                                    // DISTINCT_AXES - NUM_AXES
+  uint8_t e_factors;                                    // DISTINCT_AXES - LINEAR_AXES
 
   //
   // Planner settings
@@ -364,18 +363,18 @@ typedef struct SettingsDataStruct {
   //
   // PIDTEMP
   //
-  PIDCF_t hotendPID[HOTENDS];                           // M301 En PIDCF / M303 En U
+  raw_pidcf_t hotendPID[HOTENDS];                       // M301 En PIDCF / M303 En U
   int16_t lpq_len;                                      // M301 L
 
   //
   // PIDTEMPBED
   //
-  PID_t bedPID;                                         // M304 PID / M303 E-1 U
+  raw_pid_t bedPID;                                     // M304 PID / M303 E-1 U
 
   //
   // PIDTEMPCHAMBER
   //
-  PID_t chamberPID;                                     // M309 PID / M303 E-2 U
+  raw_pid_t chamberPID;                                 // M309 PID / M303 E-2 U
 
   //
   // User-defined Thermistors
@@ -609,7 +608,7 @@ void MarlinSettings::postprocess() {
   #endif
 
   // Software endstops depend on home_offset
-  LOOP_NUM_AXES(i) {
+  LOOP_LINEAR_AXES(i) {
     update_workspace_offset((AxisEnum)i);
     update_software_endstops((AxisEnum)i);
   }
@@ -759,7 +758,7 @@ void MarlinSettings::postprocess() {
 
     working_crc = 0; // clear before first "real data"
 
-    const uint8_t e_factors = DISTINCT_AXES - (NUM_AXES);
+    const uint8_t e_factors = DISTINCT_AXES - (LINEAR_AXES);
     _FIELD_TEST(e_factors);
     EEPROM_WRITE(e_factors);
 
@@ -1052,27 +1051,20 @@ void MarlinSettings::postprocess() {
     //
     {
       _FIELD_TEST(hotendPID);
+      #if DISABLED(PIDTEMP)
+        raw_pidcf_t pidcf = { NAN, NAN, NAN, NAN, NAN };
+      #endif
       HOTEND_LOOP() {
-        PIDCF_t pidcf = {
-          #if DISABLED(PIDTEMP)
-            NAN, NAN, NAN,
-            NAN, NAN
-          #else
-                         PID_PARAM(Kp, e),
-            unscalePID_i(PID_PARAM(Ki, e)),
-            unscalePID_d(PID_PARAM(Kd, e)),
-                         PID_PARAM(Kc, e),
-                         PID_PARAM(Kf, e)
-          #endif
-        };
+        #if ENABLED(PIDTEMP)
+          const hotend_pid_t &pid = thermalManager.temp_hotend[e].pid;
+          raw_pidcf_t pidcf = { pid.p(), pid.i(), pid.d(), pid.c(), pid.f() };
+        #endif
         EEPROM_WRITE(pidcf);
       }
 
       _FIELD_TEST(lpq_len);
-      #if DISABLED(PID_EXTRUSION_SCALING)
-        const int16_t lpq_len = 20;
-      #endif
-      EEPROM_WRITE(TERN(PID_EXTRUSION_SCALING, thermalManager.lpq_len, lpq_len));
+      const int16_t lpq_len = TERN(PID_EXTRUSION_SCALING, thermalManager.lpq_len, 20);
+      EEPROM_WRITE(lpq_len);
     }
 
     //
@@ -1080,17 +1072,12 @@ void MarlinSettings::postprocess() {
     //
     {
       _FIELD_TEST(bedPID);
-
-      const PID_t bed_pid = {
-        #if DISABLED(PIDTEMPBED)
-          NAN, NAN, NAN
-        #else
-          // Store the unscaled PID values
-          thermalManager.temp_bed.pid.Kp,
-          unscalePID_i(thermalManager.temp_bed.pid.Ki),
-          unscalePID_d(thermalManager.temp_bed.pid.Kd)
-        #endif
-      };
+      #if ENABLED(PIDTEMPBED)
+        const PID_t &pid = thermalManager.temp_bed.pid;
+        const raw_pid_t bed_pid = { pid.p(), pid.i(), pid.d() };
+      #else
+        const raw_pid_t bed_pid = { NAN, NAN, NAN };
+      #endif
       EEPROM_WRITE(bed_pid);
     }
 
@@ -1099,17 +1086,12 @@ void MarlinSettings::postprocess() {
     //
     {
       _FIELD_TEST(chamberPID);
-
-      const PID_t chamber_pid = {
-        #if DISABLED(PIDTEMPCHAMBER)
-          NAN, NAN, NAN
-        #else
-          // Store the unscaled PID values
-          thermalManager.temp_chamber.pid.Kp,
-          unscalePID_i(thermalManager.temp_chamber.pid.Ki),
-          unscalePID_d(thermalManager.temp_chamber.pid.Kd)
-        #endif
-      };
+      #if ENABLED(PIDTEMPCHAMBER)
+        const PID_t &pid = thermalManager.temp_chamber.pid;
+        const raw_pid_t chamber_pid = { pid.p(), pid.i(), pid.d() };
+      #else
+        const raw_pid_t chamber_pid = { NAN, NAN, NAN };
+      #endif
       EEPROM_WRITE(chamber_pid);
     }
 
@@ -1117,10 +1099,8 @@ void MarlinSettings::postprocess() {
     // User-defined Thermistors
     //
     #if HAS_USER_THERMISTORS
-    {
       _FIELD_TEST(user_thermistor);
       EEPROM_WRITE(thermalManager.user_thermistor);
-    }
     #endif
 
     //
@@ -1330,7 +1310,7 @@ void MarlinSettings::postprocess() {
       #else
         #define _EN_ITEM(N) , .E##N =  30
         const per_stepper_uint32_t tmc_hybrid_threshold = {
-          NUM_AXIS_LIST(.X = 100, .Y = 100, .Z = 3, .I = 3, .J = 3, .K = 3),
+          LINEAR_AXIS_LIST(.X = 100, .Y = 100, .Z = 3, .I = 3, .J = 3, .K = 3),
           .X2 = 100, .Y2 = 100, .Z2 = 3, .Z3 = 3, .Z4 = 3
           REPEAT(E_STEPPERS, _EN_ITEM)
         };
@@ -1345,7 +1325,7 @@ void MarlinSettings::postprocess() {
     {
       mot_stepper_int16_t tmc_sgt{0};
       #if USE_SENSORLESS
-        NUM_AXIS_CODE(
+        LINEAR_AXIS_CODE(
           TERN_(X_SENSORLESS, tmc_sgt.X = stepperX.homing_threshold()),
           TERN_(Y_SENSORLESS, tmc_sgt.Y = stepperY.homing_threshold()),
           TERN_(Z_SENSORLESS, tmc_sgt.Z = stepperZ.homing_threshold()),
@@ -1464,7 +1444,7 @@ void MarlinSettings::postprocess() {
     {
       #if ENABLED(BACKLASH_GCODE)
         xyz_float_t backlash_distance_mm;
-        LOOP_NUM_AXES(axis) backlash_distance_mm[axis] = backlash.get_distance_mm((AxisEnum)axis);
+        LOOP_LINEAR_AXES(axis) backlash_distance_mm[axis] = backlash.get_distance_mm((AxisEnum)axis);
         const uint8_t backlash_correction = backlash.get_correction_uint8();
       #else
         const xyz_float_t backlash_distance_mm{0};
@@ -1684,16 +1664,16 @@ void MarlinSettings::postprocess() {
       {
         // Get only the number of E stepper parameters previously stored
         // Any steppers added later are set to their defaults
-        uint32_t tmp1[NUM_AXES + e_factors];
-        float tmp2[NUM_AXES + e_factors];
-        feedRate_t tmp3[NUM_AXES + e_factors];
+        uint32_t tmp1[LINEAR_AXES + e_factors];
+        float tmp2[LINEAR_AXES + e_factors];
+        feedRate_t tmp3[LINEAR_AXES + e_factors];
         EEPROM_READ((uint8_t *)tmp1, sizeof(tmp1)); // max_acceleration_mm_per_s2
         EEPROM_READ(planner.settings.min_segment_time_us);
         EEPROM_READ((uint8_t *)tmp2, sizeof(tmp2)); // axis_steps_per_mm
         EEPROM_READ((uint8_t *)tmp3, sizeof(tmp3)); // max_feedrate_mm_s
 
         if (!validating) LOOP_DISTINCT_AXES(i) {
-          const bool in = (i < e_factors + NUM_AXES);
+          const bool in = (i < e_factors + LINEAR_AXES);
           planner.settings.max_acceleration_mm_per_s2[i] = in ? tmp1[i] : pgm_read_dword(&_DMA[ALIM(i, _DMA)]);
           planner.settings.axis_steps_per_mm[i]          = in ? tmp2[i] : pgm_read_float(&_DASU[ALIM(i, _DASU)]);
           planner.settings.max_feedrate_mm_s[i]          = in ? tmp3[i] : pgm_read_float(&_DMF[ALIM(i, _DMF)]);
@@ -1985,17 +1965,11 @@ void MarlinSettings::postprocess() {
       //
       {
         HOTEND_LOOP() {
-          PIDCF_t pidcf;
+          raw_pidcf_t pidcf;
           EEPROM_READ(pidcf);
           #if ENABLED(PIDTEMP)
-            if (!validating && !isnan(pidcf.Kp)) {
-              // Scale PID values since EEPROM values are unscaled
-              PID_PARAM(Kp, e) = pidcf.Kp;
-              PID_PARAM(Ki, e) = scalePID_i(pidcf.Ki);
-              PID_PARAM(Kd, e) = scalePID_d(pidcf.Kd);
-              TERN_(PID_EXTRUSION_SCALING, PID_PARAM(Kc, e) = pidcf.Kc);
-              TERN_(PID_FAN_SCALING, PID_PARAM(Kf, e) = pidcf.Kf);
-            }
+            if (!validating && !isnan(pidcf.p))
+              thermalManager.temp_hotend[e].pid.set(pidcf);
           #endif
         }
       }
@@ -2017,15 +1991,11 @@ void MarlinSettings::postprocess() {
       // Heated Bed PID
       //
       {
-        PID_t pid;
+        raw_pid_t pid;
         EEPROM_READ(pid);
         #if ENABLED(PIDTEMPBED)
-          if (!validating && !isnan(pid.Kp)) {
-            // Scale PID values since EEPROM values are unscaled
-            thermalManager.temp_bed.pid.Kp = pid.Kp;
-            thermalManager.temp_bed.pid.Ki = scalePID_i(pid.Ki);
-            thermalManager.temp_bed.pid.Kd = scalePID_d(pid.Kd);
-          }
+          if (!validating && !isnan(pid.p))
+            thermalManager.temp_bed.pid.set(pid);
         #endif
       }
 
@@ -2033,15 +2003,11 @@ void MarlinSettings::postprocess() {
       // Heated Chamber PID
       //
       {
-        PID_t pid;
+        raw_pid_t pid;
         EEPROM_READ(pid);
         #if ENABLED(PIDTEMPCHAMBER)
-          if (!validating && !isnan(pid.Kp)) {
-            // Scale PID values since EEPROM values are unscaled
-            thermalManager.temp_chamber.pid.Kp = pid.Kp;
-            thermalManager.temp_chamber.pid.Ki = scalePID_i(pid.Ki);
-            thermalManager.temp_chamber.pid.Kd = scalePID_d(pid.Kd);
-          }
+          if (!validating && !isnan(pid.p))
+            thermalManager.temp_chamber.pid.set(pid);
         #endif
       }
 
@@ -2276,7 +2242,7 @@ void MarlinSettings::postprocess() {
         EEPROM_READ(tmc_sgt);
         #if USE_SENSORLESS
           if (!validating) {
-            NUM_AXIS_CODE(
+            LINEAR_AXIS_CODE(
               TERN_(X_SENSORLESS, stepperX.homing_threshold(tmc_sgt.X)),
               TERN_(Y_SENSORLESS, stepperY.homing_threshold(tmc_sgt.Y)),
               TERN_(Z_SENSORLESS, stepperZ.homing_threshold(tmc_sgt.Z)),
@@ -2430,7 +2396,7 @@ void MarlinSettings::postprocess() {
         EEPROM_READ(backlash_smoothing_mm);
 
         #if ENABLED(BACKLASH_GCODE)
-          LOOP_NUM_AXES(axis) backlash.set_distance_mm((AxisEnum)axis, backlash_distance_mm[axis]);
+          LOOP_LINEAR_AXES(axis) backlash.set_distance_mm((AxisEnum)axis, backlash_distance_mm[axis]);
           backlash.set_correction_uint8(backlash_correction);
           #ifdef BACKLASH_SMOOTHING_MM
             backlash.set_smoothing_mm(backlash_smoothing_mm);
@@ -2741,7 +2707,7 @@ void MarlinSettings::postprocess() {
         #endif
 
         persistentStore.access_start();
-        uint16_t status = persistentStore.read_data(pos, dest, MESH_STORE_SIZE, &crc);
+        const uint16_t status = persistentStore.read_data(pos, dest, MESH_STORE_SIZE, &crc);
         persistentStore.access_finish();
 
         #if ENABLED(OPTIMIZED_MESH_STORAGE)
@@ -2752,16 +2718,6 @@ void MarlinSettings::postprocess() {
           }
           else
             bedlevel.set_mesh_from_store(z_mesh_store, bedlevel.z_values);
-        #endif
-
-        #if ENABLED(DWIN_LCD_PROUI)
-          status = !BedLevelTools.meshvalidate();
-          if (status) {
-            bedlevel.invalidate();
-            LCD_MESSAGE(MSG_UBL_MESH_INVALID);
-          }
-          else
-            ui.status_printf(0, GET_TEXT_F(MSG_MESH_LOADED), bedlevel.storage_slot);
         #endif
 
         if (status) SERIAL_ECHOLNPGM("?Unable to load mesh data.");
@@ -2827,7 +2783,7 @@ void MarlinSettings::reset() {
       #define DEFAULT_KJERK 0
     #endif
     planner.max_jerk.set(
-      NUM_AXIS_LIST(DEFAULT_XJERK, DEFAULT_YJERK, DEFAULT_ZJERK, DEFAULT_IJERK, DEFAULT_JJERK, DEFAULT_KJERK)
+      LINEAR_AXIS_LIST(DEFAULT_XJERK, DEFAULT_YJERK, DEFAULT_ZJERK, DEFAULT_IJERK, DEFAULT_JJERK, DEFAULT_KJERK)
     );
     TERN_(HAS_CLASSIC_E_JERK, planner.max_jerk.e = DEFAULT_EJERK);
   #endif
@@ -2889,7 +2845,7 @@ void MarlinSettings::reset() {
   #if ENABLED(BACKLASH_GCODE)
     backlash.set_correction(BACKLASH_CORRECTION);
     constexpr xyz_float_t tmp = BACKLASH_DISTANCE_MM;
-    LOOP_NUM_AXES(axis) backlash.set_distance_mm((AxisEnum)axis, tmp[axis]);
+    LOOP_LINEAR_AXES(axis) backlash.set_distance_mm((AxisEnum)axis, tmp[axis]);
     #ifdef BACKLASH_SMOOTHING_MM
       backlash.set_smoothing_mm(BACKLASH_SMOOTHING_MM);
     #endif
@@ -2935,11 +2891,11 @@ void MarlinSettings::reset() {
   //
   #if HAS_BED_PROBE
     constexpr float dpo[] = NOZZLE_TO_PROBE_OFFSET;
-    static_assert(COUNT(dpo) == NUM_AXES, "NOZZLE_TO_PROBE_OFFSET must contain offsets for each linear axis X, Y, Z....");
+    static_assert(COUNT(dpo) == LINEAR_AXES, "NOZZLE_TO_PROBE_OFFSET must contain offsets for each linear axis X, Y, Z....");
     #if HAS_PROBE_XY_OFFSET
-      LOOP_NUM_AXES(a) probe.offset[a] = dpo[a];
+      LOOP_LINEAR_AXES(a) probe.offset[a] = dpo[a];
     #else
-      probe.offset.set(NUM_AXIS_LIST(0, 0, dpo[Z_AXIS], 0, 0, 0));
+      probe.offset.set(LINEAR_AXIS_LIST(0, 0, dpo[Z_AXIS], 0, 0, 0));
     #endif
   #endif
 
@@ -3097,11 +3053,13 @@ void MarlinSettings::reset() {
       #define PID_DEFAULT(N,E) DEFAULT_##N
     #endif
     HOTEND_LOOP() {
-      PID_PARAM(Kp, e) =      float(PID_DEFAULT(Kp, ALIM(e, defKp)));
-      PID_PARAM(Ki, e) = scalePID_i(PID_DEFAULT(Ki, ALIM(e, defKi)));
-      PID_PARAM(Kd, e) = scalePID_d(PID_DEFAULT(Kd, ALIM(e, defKd)));
-      TERN_(PID_EXTRUSION_SCALING, PID_PARAM(Kc, e) = float(PID_DEFAULT(Kc, ALIM(e, defKc))));
-      TERN_(PID_FAN_SCALING, PID_PARAM(Kf, e) = float(PID_DEFAULT(Kf, ALIM(e, defKf))));
+      thermalManager.temp_hotend[e].pid.set(
+        PID_DEFAULT(Kp, ALIM(e, defKp)),
+        PID_DEFAULT(Ki, ALIM(e, defKi)),
+        PID_DEFAULT(Kd, ALIM(e, defKd))
+        OPTARG(PID_EXTRUSION_SCALING, PID_DEFAULT(Kc, ALIM(e, defKc)))
+        OPTARG(PID_FAN_SCALING, PID_DEFAULT(Kf, ALIM(e, defKf)))
+      );
     }
   #endif
 
@@ -3115,9 +3073,7 @@ void MarlinSettings::reset() {
   //
 
   #if ENABLED(PIDTEMPBED)
-    thermalManager.temp_bed.pid.Kp = DEFAULT_bedKp;
-    thermalManager.temp_bed.pid.Ki = scalePID_i(DEFAULT_bedKi);
-    thermalManager.temp_bed.pid.Kd = scalePID_d(DEFAULT_bedKd);
+    thermalManager.temp_bed.pid.set(DEFAULT_bedKp, DEFAULT_bedKi, DEFAULT_bedKd);
   #endif
 
   //
@@ -3125,9 +3081,7 @@ void MarlinSettings::reset() {
   //
 
   #if ENABLED(PIDTEMPCHAMBER)
-    thermalManager.temp_chamber.pid.Kp = DEFAULT_chamberKp;
-    thermalManager.temp_chamber.pid.Ki = scalePID_i(DEFAULT_chamberKi);
-    thermalManager.temp_chamber.pid.Kd = scalePID_d(DEFAULT_chamberKd);
+    thermalManager.temp_chamber.pid.set(DEFAULT_chamberKp, DEFAULT_chamberKi, DEFAULT_chamberKd);
   #endif
 
   //
@@ -3297,14 +3251,15 @@ void MarlinSettings::reset() {
     static_assert(COUNT(_filament_heat_capacity_permm) == HOTENDS, "FILAMENT_HEAT_CAPACITY_PERMM must have HOTENDS items.");
 
     HOTEND_LOOP() {
-      thermalManager.temp_hotend[e].constants.heater_power = _mpc_heater_power[e];
-      thermalManager.temp_hotend[e].constants.block_heat_capacity = _mpc_block_heat_capacity[e];
-      thermalManager.temp_hotend[e].constants.sensor_responsiveness = _mpc_sensor_responsiveness[e];
-      thermalManager.temp_hotend[e].constants.ambient_xfer_coeff_fan0 = _mpc_ambient_xfer_coeff[e];
+      MPC_t &constants = thermalManager.temp_hotend[e].constants;
+      constants.heater_power = _mpc_heater_power[e];
+      constants.block_heat_capacity = _mpc_block_heat_capacity[e];
+      constants.sensor_responsiveness = _mpc_sensor_responsiveness[e];
+      constants.ambient_xfer_coeff_fan0 = _mpc_ambient_xfer_coeff[e];
       #if ENABLED(MPC_INCLUDE_FAN)
-        thermalManager.temp_hotend[e].constants.fan255_adjustment = _mpc_ambient_xfer_coeff_fan255[e] - _mpc_ambient_xfer_coeff[e];
+        constants.fan255_adjustment = _mpc_ambient_xfer_coeff_fan255[e] - _mpc_ambient_xfer_coeff[e];
       #endif
-      thermalManager.temp_hotend[e].constants.filament_heat_capacity_permm = _filament_heat_capacity_permm[e];
+      constants.filament_heat_capacity_permm = _filament_heat_capacity_permm[e];
     }
   #endif
 

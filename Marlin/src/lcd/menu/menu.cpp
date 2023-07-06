@@ -31,7 +31,7 @@
 #include "../../module/temperature.h"
 #include "../../gcode/queue.h"
 
-#if HAS_SOUND
+#if HAS_BUZZER
   #include "../../libs/buzzer.h"
 #endif
 
@@ -191,7 +191,7 @@ void MarlinUI::goto_screen(screenFunc_t screen, const uint16_t encoder/*=0*/, co
         else {
           #if ENABLED(MOVE_Z_WHEN_IDLE)
             ui.manual_move.menu_scale = MOVE_Z_IDLE_MULTIPLICATOR;
-            screen = []{ lcd_move_axis(Z_AXIS); };
+            screen = lcd_move_z;
           #endif
         }
       }
@@ -272,7 +272,7 @@ void scroll_screen(const uint8_t limit, const bool is_menu) {
     encoderTopLine = encoderLine;
 }
 
-#if HAS_SOUND
+#if HAS_BUZZER
   void MarlinUI::completion_feedback(const bool good/*=true*/) {
     TERN_(HAS_TOUCH_SLEEP, wakeup_screen()); // Wake up on rotary encoder click...
     if (good) OKAY_BUZZ(); else ERR_BUZZ();

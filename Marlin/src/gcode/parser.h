@@ -225,7 +225,7 @@ public:
   #endif // !FASTER_GCODE_PARSER
 
   // Seen any axis parameter
-  static bool seen_axis() { return seen(STR_AXES_LOGICAL); }
+  static bool seen_axis() { return seen(LOGICAL_AXES_STRING); }
 
   #if ENABLED(GCODE_QUOTED_STRINGS)
     static char* unescape_string(char* &src);

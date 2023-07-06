@@ -491,6 +491,9 @@ void CardReader::manage_media() {
   prev_stat = stat;                 // Change now to prevent re-entry in safe_delay
 
   if (stat) {                       // Media Inserted
+#if ENABLED( FF_FLASHAIR_FIX )
+      safe_delay(300);
+#endif
     safe_delay(500);                // Some boards need a delay to get settled
 
     // Try to mount the media (only later with SD_IGNORE_AT_STARTUP)
@@ -1087,6 +1090,8 @@ void CardReader::cdroot() {
    */
   void CardReader::presort() {
 
+    watchdog_refresh();
+
     // Throw away old sort index
     flush_presort();
 
@@ -1161,6 +1166,7 @@ void CardReader::cdroot() {
         for (uint16_t i = fileCnt; --i;) {
           bool didSwap = false;
           uint8_t o1 = sort_order[0];
+          watchdog_refresh();
           #if DISABLED(SDSORT_USES_RAM)
             selectFileByIndex(o1);              // Pre-fetch the first entry and save it
             strcpy(name1, longest_filename());  // so the loop only needs one fetch

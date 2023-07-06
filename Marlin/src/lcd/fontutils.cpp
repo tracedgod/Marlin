@@ -156,6 +156,17 @@ const uint8_t* get_utf8_value_cb(const uint8_t *pstart, read_byte_cb_t cb_read_b
   else
     for (; 0xFC < (0xFE & valcur); ) { p++; valcur = cb_read_byte(p); }
 
+#if ENABLED( FF_RUSSIAN_FIX )
+  /* russian ? remap to ASCII => 0xC0 - 0xFF */
+  if( val >= 1040 && val <= 1103 )
+    val -= 848;
+  /* russian capital IO */
+  else if( val == 1025 )
+    val = 168;
+  /* russian small IO */
+  else if( val == 1105 )
+    val = 184;
+#endif
   pval = val;
 
   return p;

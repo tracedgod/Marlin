@@ -31,10 +31,8 @@
 
 #if ENABLED(DWIN_LCD_PROUI)
 
-#include "dwin_defines.h"
-
-#if HAS_LOCKSCREEN
-
+#include "../../../core/types.h"
+#include "dwin_lcd.h"
 #include "dwinui.h"
 #include "dwin.h"
 #include "lockscreen.h"
@@ -74,7 +72,5 @@ void LockScreenClass::onEncoder(EncoderState encoder_diffState) {
   DWIN_Draw_VLine(Color_Yellow, lock_pos * DWIN_WIDTH / 255, 260, 20);
   DWIN_UpdateLCD();
 }
-
-#endif // HAS_LOCKSCREEN
 
 #endif // DWIN_LCD_PROUI

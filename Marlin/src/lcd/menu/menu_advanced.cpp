@@ -209,37 +209,59 @@ void menu_backlash();
 
 #if ENABLED(PID_EDIT_MENU)
 
-  float raw_Ki, raw_Kd; // place-holders for Ki and Kd edits
+  // Placeholders for PID editing
+  float raw_Kp, raw_Ki, raw_Kd;
+  #if ENABLED(PID_EXTRUSION_SCALING)
+    float raw_Kc;
+  #endif
+  #if ENABLED(PID_FAN_SCALING)
+    float raw_Kf;
+  #endif
 
-  // Helpers for editing PID Ki & Kd values
-  // grab the PID value out of the temp variable; scale it; then update the PID driver
-  void copy_and_scalePID_i(const int8_t e) {
+  // Helpers for editing PID Kp, Ki and Kd values
+  void apply_PID_p(const int8_t e) {
     switch (e) {
       #if ENABLED(PIDTEMPBED)
-        case H_BED: thermalManager.temp_bed.pid.Ki = scalePID_i(raw_Ki); break;
+        case H_BED: thermalManager.temp_bed.pid.set_Ki(raw_Ki); break;
       #endif
       #if ENABLED(PIDTEMPCHAMBER)
-        case H_CHAMBER: thermalManager.temp_chamber.pid.Ki = scalePID_i(raw_Ki); break;
+        case H_CHAMBER: thermalManager.temp_chamber.pid.set_Ki(raw_Ki); break;
       #endif
       default:
         #if ENABLED(PIDTEMP)
-          PID_PARAM(Ki, e) = scalePID_i(raw_Ki);
+          SET_HOTEND_PID(Kp, e, raw_Kp);
           thermalManager.updatePID();
         #endif
         break;
     }
   }
-  void copy_and_scalePID_d(const int8_t e) {
+  void apply_PID_i(const int8_t e) {
     switch (e) {
       #if ENABLED(PIDTEMPBED)
-        case H_BED: thermalManager.temp_bed.pid.Kd = scalePID_d(raw_Kd); break;
+        case H_BED: thermalManager.temp_bed.pid.set_Ki(raw_Ki); break;
       #endif
       #if ENABLED(PIDTEMPCHAMBER)
-        case H_CHAMBER: thermalManager.temp_chamber.pid.Kd = scalePID_d(raw_Kd); break;
+        case H_CHAMBER: thermalManager.temp_chamber.pid.set_Ki(raw_Ki); break;
       #endif
       default:
         #if ENABLED(PIDTEMP)
-          PID_PARAM(Kd, e) = scalePID_d(raw_Kd);
+          SET_HOTEND_PID(Ki, e, raw_Ki);
+          thermalManager.updatePID();
+        #endif
+        break;
+    }
+  }
+  void apply_PID_d(const int8_t e) {
+    switch (e) {
+      #if ENABLED(PIDTEMPBED)
+        case H_BED: thermalManager.temp_bed.pid.set_Kd(raw_Kd); break;
+      #endif
+      #if ENABLED(PIDTEMPCHAMBER)
+        case H_CHAMBER: thermalManager.temp_chamber.pid.set_Kd(raw_Kd); break;
+      #endif
+      default:
+        #if ENABLED(PIDTEMP)
+          SET_HOTEND_PID(Kd, e, raw_Kd);
           thermalManager.updatePID();
         #endif
         break;
@@ -291,16 +313,18 @@ void menu_backlash();
 
     #if BOTH(PIDTEMP, PID_EDIT_MENU)
       #define __PID_HOTEND_MENU_ITEMS(N) \
-        raw_Ki = unscalePID_i(PID_PARAM(Ki, N)); \
-        raw_Kd = unscalePID_d(PID_PARAM(Kd, N)); \
-        EDIT_ITEM_FAST_N(float41sign, N, MSG_PID_P_E, &PID_PARAM(Kp, N), 1, 9990); \
-        EDIT_ITEM_FAST_N(float52sign, N, MSG_PID_I_E, &raw_Ki, 0.01f, 9990, []{ copy_and_scalePID_i(N); }); \
-        EDIT_ITEM_FAST_N(float41sign, N, MSG_PID_D_E, &raw_Kd, 1, 9990, []{ copy_and_scalePID_d(N); })
+        raw_Kp = thermalManager.temp_hotend[N].pid.p(); \
+        raw_Ki = thermalManager.temp_hotend[N].pid.i(); \
+        raw_Kd = thermalManager.temp_hotend[N].pid.d(); \
+        EDIT_ITEM_FAST_N(float41sign, N, MSG_PID_P_E, &raw_Kp, 1, 9990, []{ apply_PID_p(N); }); \
+        EDIT_ITEM_FAST_N(float52sign, N, MSG_PID_I_E, &raw_Ki, 0.01f, 9990, []{ apply_PID_i(N); }); \
+        EDIT_ITEM_FAST_N(float41sign, N, MSG_PID_D_E, &raw_Kd, 1, 9990, []{ apply_PID_d(N); })
 
       #if ENABLED(PID_EXTRUSION_SCALING)
         #define _PID_HOTEND_MENU_ITEMS(N) \
           __PID_HOTEND_MENU_ITEMS(N); \
-          EDIT_ITEM_N(float4, N, MSG_PID_C_E, &PID_PARAM(Kc, N), 1, 9990)
+          raw_Kc = thermalManager.temp_hotend[N].pid.c(); \
+          EDIT_ITEM_N(float4, N, MSG_PID_C_E, &raw_Kc, 1, 9990, []{ SET_HOTEND_PID(Kc, N, raw_Kc); thermalManager.updatePID(); });
       #else
         #define _PID_HOTEND_MENU_ITEMS(N) __PID_HOTEND_MENU_ITEMS(N)
       #endif
@@ -308,7 +332,8 @@ void menu_backlash();
       #if ENABLED(PID_FAN_SCALING)
         #define _HOTEND_PID_EDIT_MENU_ITEMS(N) \
           _PID_HOTEND_MENU_ITEMS(N); \
-          EDIT_ITEM_N(float4, N, MSG_PID_F_E, &PID_PARAM(Kf, N), 1, 9990)
+          raw_Kf = thermalManager.temp_hotend[N].pid.f(); \
+          EDIT_ITEM_N(float4, N, MSG_PID_F_E, &raw_Kf, 1, 9990, []{ SET_HOTEND_PID(Kf, N, raw_Kf); thermalManager.updatePID(); });
       #else
         #define _HOTEND_PID_EDIT_MENU_ITEMS(N) _PID_HOTEND_MENU_ITEMS(N)
       #endif
@@ -321,11 +346,12 @@ void menu_backlash();
 
     #if ENABLED(PID_EDIT_MENU) && EITHER(PIDTEMPBED, PIDTEMPCHAMBER)
       #define _PID_EDIT_ITEMS_TMPL(N,T) \
-        raw_Ki = unscalePID_i(T.pid.Ki); \
-        raw_Kd = unscalePID_d(T.pid.Kd); \
-        EDIT_ITEM_FAST_N(float41sign, N, MSG_PID_P_E, &T.pid.Kp, 1, 9990); \
-        EDIT_ITEM_FAST_N(float52sign, N, MSG_PID_I_E, &raw_Ki, 0.01f, 9990, []{ copy_and_scalePID_i(N); }); \
-        EDIT_ITEM_FAST_N(float41sign, N, MSG_PID_D_E, &raw_Kd, 1, 9990, []{ copy_and_scalePID_d(N); })
+        raw_Kp = T.pid.p(); \
+        raw_Ki = T.pid.i(); \
+        raw_Kd = T.pid.d(); \
+        EDIT_ITEM_FAST_N(float41sign, N, MSG_PID_P_E, &raw_Kp, 1, 9990, []{ apply_PID_p(N); }); \
+        EDIT_ITEM_FAST_N(float52sign, N, MSG_PID_I_E, &raw_Ki, 0.01f, 9990, []{ apply_PID_i(N); }); \
+        EDIT_ITEM_FAST_N(float41sign, N, MSG_PID_D_E, &raw_Kd, 1, 9990, []{ apply_PID_d(N); })
     #endif
 
     #if ENABLED(PIDTEMP)
@@ -429,7 +455,7 @@ void menu_backlash();
     START_MENU();
     BACK_ITEM(MSG_ADVANCED_SETTINGS);
 
-    LOOP_NUM_AXES(a)
+    LOOP_LINEAR_AXES(a)
       EDIT_ITEM_FAST_N(float5, a, MSG_VMAX_N, &planner.settings.max_feedrate_mm_s[a], 1, max_fr_edit_scaled[a]);
 
     #if E_STEPPERS
@@ -484,7 +510,7 @@ void menu_backlash();
     EDIT_ITEM_FAST(float5_25, MSG_A_TRAVEL, &planner.settings.travel_acceleration, 25, max_accel);
 
     #define EDIT_AMAX(Q,L) EDIT_ITEM_FAST_N(long5_25, _AXIS(Q), MSG_AMAX_N, &planner.settings.max_acceleration_mm_per_s2[_AXIS(Q)], L, max_accel_edit_scaled[_AXIS(Q)], []{ planner.refresh_acceleration_rates(); })
-    NUM_AXIS_CODE(
+    LINEAR_AXIS_CODE(
       EDIT_AMAX(A, 100), EDIT_AMAX(B, 100), EDIT_AMAX(C, 10),
       EDIT_AMAX(I,  10), EDIT_AMAX(J,  10), EDIT_AMAX(K, 10)
     );
@@ -574,7 +600,7 @@ void menu_advanced_steps_per_mm() {
   START_MENU();
   BACK_ITEM(MSG_ADVANCED_SETTINGS);
 
-  LOOP_NUM_AXES(a)
+  LOOP_LINEAR_AXES(a)
     EDIT_ITEM_FAST_N(float61, a, MSG_N_STEPS, &planner.settings.axis_steps_per_mm[a], 5, 9999, []{ planner.refresh_positioning(); });
 
   #if ENABLED(DISTINCT_E_FACTORS)
@@ -695,6 +721,42 @@ void menu_advanced_settings() {
       MSG_BUTTON_INIT, MSG_BUTTON_CANCEL,
       ui.init_eeprom, nullptr,
       GET_TEXT_F(MSG_INIT_EEPROM), (const char *)nullptr, F("?")
+    );
+  #endif
+
+  #if ANY( FF_DREMEL_3D20_MACHINE, FF_DREAMER_MACHINE )
+    CONFIRM_ITEM_F( F( "Firmware update trigger" ),
+      MSG_YES, MSG_NO,
+      []
+      {
+        uint32_t signature[7] = { 0 };
+        const uint32_t sig_address = 0x0800C000;
+        FLASH_EraseInitTypeDef erase = {
+          .TypeErase = FLASH_TYPEERASE_SECTORS,
+          .Banks = FLASH_BANK_1,
+          .Sector = FLASH_SECTOR_3,
+          .NbSectors = 1,
+          .VoltageRange = FLASH_VOLTAGE_RANGE_3,
+        };
+        uint32_t erase_err = 0;
+        /* readback signature: magic string + mcu link hash */
+        memcpy( signature, (uint8_t*)sig_address, sizeof( signature ) );
+        HAL_FLASH_Unlock();
+        __HAL_FLASH_CLEAR_FLAG( FLASH_FLAG_EOP | FLASH_FLAG_OPERR | FLASH_FLAG_WRPERR | 
+                                FLASH_FLAG_PGAERR | FLASH_FLAG_PGPERR | FLASH_FLAG_PGSERR
+                                );
+        HAL_FLASHEx_Erase( &erase,  &erase_err );
+        for( size_t i = 0; i < sizeof(signature)/sizeof(uint32_t); i++ )
+        {
+          HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD, sig_address + i*sizeof(uint32_t), signature[i] );
+        }
+        FLASH_FlushCaches();
+        HAL_FLASH_Lock();
+
+        ui.return_to_status();
+        ui.set_status( F("Reboot your printer") );
+      }, nullptr,
+      F( "Write trigger" ), (const char *)nullptr, F("?")
     );
   #endif
 

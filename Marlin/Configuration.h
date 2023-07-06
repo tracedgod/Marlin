@@ -21,6 +21,41 @@
  */
 #pragma once
 
+/* you must be sure what you know what you do :) */
+#define FF_FLASHAIR_FIX
+#define FF_RUSSIAN_FIX
+#define M907_PROTECTION
+
+/* Select one of the printers below */
+//#define FF_INVENTOR_MACHINE
+//#define FF_DREAMER_MACHINE
+//#define FF_DREAMER_NX_MACHINE
+//#define FF_DREMEL_3D20_MACHINE
+
+/* Select black or silver pulley */
+//#define FF_BLACK_PULLEY
+//#define FF_SILVER_PULLEY
+
+#if NONE(FF_BLACK_PULLEY, FF_SILVER_PULLEY)
+  #define FF_BLACK_PULLEY
+#endif
+
+/* Switch left and right extruder */ 
+//#define FF_EXTRUDER_SWAP
+#if NONE(FF_DREAMER_MACHINE, FF_INVENTOR_MACHINE) && ENABLED(FF_EXTRUDER_SWAP)
+  #error FF_EXTRUDER_SWAP works only with Dreamer, Inventor
+#endif
+
+/* Select UI type */ 
+//#define USE_OLD_MARLIN_UI
+//#define USE_MKS_UI
+
+/* NX and 3D20 mostly same, but 3D20 does not have heated bed and chamber */
+#if ENABLED(FF_DREMEL_3D20_MACHINE)
+  #define FF_DREAMER_NX_MACHINE
+#endif
+
+
 /**
  * Configuration.h
  *
@@ -60,7 +95,7 @@
 // @section info
 
 // Author info of this build printed to the host during boot and M115
-#define STRING_CONFIG_H_AUTHOR "(none, default config)" // Who made the changes.
+#define STRING_CONFIG_H_AUTHOR "(Moonglow, FF Dreamer)" // Who made the changes.
 //#define CUSTOM_VERSION_FILE Version.h // Path from the root directory (no quotes)
 
 /**
@@ -87,7 +122,7 @@
 
 // Choose the name from boards.h that matches your setup
 #ifndef MOTHERBOARD
-  #define MOTHERBOARD BOARD_RAMPS_14_EFB
+  #define MOTHERBOARD BOARD_FF_MOTHERBOARD
 #endif
 
 /**
@@ -98,7 +133,7 @@
  *
  * :[-1, 0, 1, 2, 3, 4, 5, 6, 7]
  */
-#define SERIAL_PORT 0
+#define SERIAL_PORT -1
 
 /**
  * Serial Port Baud Rate
@@ -134,7 +169,11 @@
 //#define BLUETOOTH
 
 // Name displayed in the LCD "Ready" message and Info menu
-//#define CUSTOM_MACHINE_NAME "3D Printer"
+#if ENABLED(FF_DREMEL_3D20_MACHINE)
+  #define CUSTOM_MACHINE_NAME "Dremel"
+#else
+  #define CUSTOM_MACHINE_NAME "FlashForge"
+#endif
 
 // Printer's unique ID, used by some programs to differentiate between machines.
 // Choose your own or use a service like https://www.uuidgenerator.net/version4
@@ -204,7 +243,13 @@
 
 // This defines the number of extruders
 // :[0, 1, 2, 3, 4, 5, 6, 7, 8]
-#define EXTRUDERS 1
+#if ANY(FF_INVENTOR_MACHINE, FF_DREAMER_MACHINE)
+  #define FF_FIX_EXTRUDER_FAN 1
+  #define EXTRUDERS 2
+#else
+  #define FF_FIX_EXTRUDER_FAN 0
+  #define EXTRUDERS 1
+#endif
 
 // Generally expected filament diameter (1.75, 2.85, 3.0, ...). Used for Volumetric, Filament Width Sensor, etc.
 #define DEFAULT_NOMINAL_FILAMENT_DIA 1.75
@@ -362,7 +407,14 @@
 // Offset of the extruders (uncomment if using more than one and relying on firmware to position when changing).
 // The offset has to be X=0, Y=0 for the extruder 0 hotend (default extruder).
 // For the other hotends it is their distance from the extruder 0 hotend.
-//#define HOTEND_OFFSET_X { 0.0, 20.00 } // (mm) relative X-offset for each nozzle
+#if ANY(FF_INVENTOR_MACHINE, FF_DREAMER_MACHINE)
+  #if ENABLED(FF_EXTRUDER_SWAP)
+    #define HOTEND_OFFSET_X { 0.0, 34.0 } // (mm) relative X-offset for each nozzle
+  #else
+    #define HOTEND_OFFSET_X { 0.0, -34.0 } // (mm) relative X-offset for each nozzle
+  #endif
+#endif
+
 //#define HOTEND_OFFSET_Y { 0.0, 5.00 }  // (mm) relative Y-offset for each nozzle
 //#define HOTEND_OFFSET_Z { 0.0, 0.00 }  // (mm) relative Z-offset for each nozzle
 
@@ -508,19 +560,29 @@
  *   999 : Dummy Table that ALWAYS reads 100°C or the temperature defined below.
  *
  */
-#define TEMP_SENSOR_0 1
-#define TEMP_SENSOR_1 0
-#define TEMP_SENSOR_2 0
-#define TEMP_SENSOR_3 0
-#define TEMP_SENSOR_4 0
-#define TEMP_SENSOR_5 0
-#define TEMP_SENSOR_6 0
-#define TEMP_SENSOR_7 0
-#define TEMP_SENSOR_BED 0
-#define TEMP_SENSOR_PROBE 0
-#define TEMP_SENSOR_CHAMBER 0
-#define TEMP_SENSOR_COOLER 0
-#define TEMP_SENSOR_BOARD 0
+#define TEMP_SENSOR_0         -666
+#if EXTRUDERS > 1
+  #define TEMP_SENSOR_1       -666
+#endif
+#define TEMP_SENSOR_2         0
+#define TEMP_SENSOR_3         0
+#define TEMP_SENSOR_4         0
+#define TEMP_SENSOR_5         0
+#define TEMP_SENSOR_6         0
+#define TEMP_SENSOR_7         0
+#if ENABLED(FF_DREMEL_3D20_MACHINE)
+  #define TEMP_SENSOR_BED     0
+#else
+  #define TEMP_SENSOR_BED     1
+#endif
+#define TEMP_SENSOR_PROBE     0
+#if ENABLED(FF_DREMEL_3D20_MACHINE)
+  #define TEMP_SENSOR_CHAMBER 0
+#else
+  #define TEMP_SENSOR_CHAMBER 1
+#endif
+#define TEMP_SENSOR_COOLER    0
+#define TEMP_SENSOR_BOARD     0
 #define TEMP_SENSOR_REDUNDANT 0
 
 // Dummy thermistor constant temperature readings, for use with 998 and 999
@@ -563,29 +625,29 @@
 
 // Below this temperature the heater will be switched off
 // because it probably indicates a broken thermistor wire.
-#define HEATER_0_MINTEMP   5
-#define HEATER_1_MINTEMP   5
-#define HEATER_2_MINTEMP   5
-#define HEATER_3_MINTEMP   5
-#define HEATER_4_MINTEMP   5
-#define HEATER_5_MINTEMP   5
-#define HEATER_6_MINTEMP   5
-#define HEATER_7_MINTEMP   5
+#define HEATER_0_MINTEMP   0
+#define HEATER_1_MINTEMP   0
+#define HEATER_2_MINTEMP   0
+#define HEATER_3_MINTEMP   0
+#define HEATER_4_MINTEMP   0
+#define HEATER_5_MINTEMP   0
+#define HEATER_6_MINTEMP   0
+#define HEATER_7_MINTEMP   0
 #define BED_MINTEMP        5
 #define CHAMBER_MINTEMP    5
 
 // Above this temperature the heater will be switched off.
 // This can protect components from overheating, but NOT from shorts and failures.
 // (Use MINTEMP for thermistor short/failure protection.)
-#define HEATER_0_MAXTEMP 275
-#define HEATER_1_MAXTEMP 275
-#define HEATER_2_MAXTEMP 275
-#define HEATER_3_MAXTEMP 275
-#define HEATER_4_MAXTEMP 275
-#define HEATER_5_MAXTEMP 275
-#define HEATER_6_MAXTEMP 275
-#define HEATER_7_MAXTEMP 275
-#define BED_MAXTEMP      150
+#define HEATER_0_MAXTEMP 280
+#define HEATER_1_MAXTEMP 280
+#define HEATER_2_MAXTEMP 280
+#define HEATER_3_MAXTEMP 280
+#define HEATER_4_MAXTEMP 280
+#define HEATER_5_MAXTEMP 280
+#define HEATER_6_MAXTEMP 280
+#define HEATER_7_MAXTEMP 280
+#define BED_MAXTEMP      130
 #define CHAMBER_MAXTEMP  60
 
 /**
@@ -614,17 +676,16 @@
 #if ENABLED(PIDTEMP)
   //#define PID_PARAMS_PER_HOTEND // Uses separate PID parameters for each extruder (useful for mismatched extruders)
                                   // Set/get with G-code: M301 E[extruder number, 0-2]
-
   #if ENABLED(PID_PARAMS_PER_HOTEND)
     // Specify up to one value per hotend here, according to your setup.
     // If there are fewer values, the last one applies to the remaining hotends.
-    #define DEFAULT_Kp_LIST {  22.20,  22.20 }
-    #define DEFAULT_Ki_LIST {   1.08,   1.08 }
-    #define DEFAULT_Kd_LIST { 114.00, 114.00 }
+    #define DEFAULT_Kp_LIST {  33.00,  33.00 }
+    #define DEFAULT_Ki_LIST {   2.25,   2.25 }
+    #define DEFAULT_Kd_LIST { 106.70, 106.70 }
   #else
-    #define DEFAULT_Kp  22.20
-    #define DEFAULT_Ki   1.08
-    #define DEFAULT_Kd 114.00
+    #define DEFAULT_Kp  33.00
+    #define DEFAULT_Ki   2.25
+    #define DEFAULT_Kd 106.70
   #endif
 #endif
 
@@ -804,8 +865,10 @@
  */
 
 #define THERMAL_PROTECTION_HOTENDS // Enable thermal protection for all extruders
-#define THERMAL_PROTECTION_BED     // Enable thermal protection for the heated bed
-#define THERMAL_PROTECTION_CHAMBER // Enable thermal protection for the heated chamber
+#if DISABLED(FF_DREMEL_3D20_MACHINE)
+  #define THERMAL_PROTECTION_BED   // Enable thermal protection for the heated bed
+#endif
+//#define THERMAL_PROTECTION_CHAMBER // Enable thermal protection for the heated chamber
 #define THERMAL_PROTECTION_COOLER  // Enable thermal protection for the laser cooling
 
 //===========================================================================
@@ -963,6 +1026,13 @@
   #define PSI_HOMING_OFFSET    0
 #endif
 
+// Articulated robot (arm). Joints are directly mapped to axes with no kinematics.
+//#define ARTICULATED_ROBOT_ARM
+
+// For a hot wire cutter with parallel horizontal axes (X, I) where the heights of the two wire
+// ends are controlled by parallel axes (Y, J). Joints are directly mapped to axes (no kinematics).
+//#define FOAMCUTTER_XYUV
+
 //===========================================================================
 //============================== Endstop Settings ===========================
 //===========================================================================
@@ -972,15 +1042,19 @@
 // Specify here all the endstop connectors that are connected to any endstop or probe.
 // Almost all printers will be using one per axis. Probes will use one or more of the
 // extra connectors. Leave undefined any used for non-endstop and non-probe purposes.
-#define USE_XMIN_PLUG
-#define USE_YMIN_PLUG
-#define USE_ZMIN_PLUG
+//#define USE_XMIN_PLUG
+//#define USE_YMIN_PLUG
+#if ANY(FF_DREAMER_MACHINE, FF_DREAMER_NX_MACHINE) 
+  #define USE_ZMIN_PLUG
+#endif
 //#define USE_IMIN_PLUG
 //#define USE_JMIN_PLUG
 //#define USE_KMIN_PLUG
-//#define USE_XMAX_PLUG
-//#define USE_YMAX_PLUG
-//#define USE_ZMAX_PLUG
+#define USE_XMAX_PLUG
+#define USE_YMAX_PLUG
+#if ENABLED(FF_INVENTOR_MACHINE)
+  #define USE_ZMAX_PLUG
+#endif
 //#define USE_IMAX_PLUG
 //#define USE_JMAX_PLUG
 //#define USE_KMAX_PLUG
@@ -1024,19 +1098,24 @@
 #endif
 
 // Mechanical endstop with COM to ground and NC to Signal uses "false" here (most common setup).
-#define X_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Y_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Z_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
+#define X_MIN_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
+#define Y_MIN_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
+#define Z_MIN_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
 #define I_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
 #define J_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
 #define K_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define X_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Y_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Z_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
+#define X_MAX_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
+#define Y_MAX_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
+#define Z_MAX_ENDSTOP_INVERTING true // Set to true to invert the logic of the endstop.
 #define I_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
 #define J_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
 #define K_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Z_MIN_PROBE_ENDSTOP_INVERTING false // Set to true to invert the logic of the probe.
+#define Z_MIN_PROBE_ENDSTOP_INVERTING true // Set to true to invert the logic of the probe.
+
+// stepper driver parameters specific to FlashForge
+#define DIGIPOT_A4988_Rsx               0.270 /* FlashForge drivers Rsense */
+#define DIGIPOT_A4988_Vrefmax           2.3   /* HR4988 */
+
 
 // Enable this feature if all enabled endstop pins are interrupt-capable.
 // This will remove the need to poll the interrupt pins, saving many CPU cycles.
@@ -1084,18 +1163,27 @@
  * Override with M92
  *                                      X, Y, Z [, I [, J [, K]]], E0 [, E1[, E2...]]
  */
-#define DEFAULT_AXIS_STEPS_PER_UNIT   { 80, 80, 400, 500 }
-
+/**
+  *Black pulley:   X88.9 Y88.9 Z400 E96.3
+  *Silver pulley:  X94.1 Y94.1 Z400 E96.3
+*/
+#if ENABLED(FF_BLACK_PULLEY)
+	#define DEFAULT_AXIS_STEPS_PER_UNIT   { 88.909720, 88.909720, 400.0, 96.275202/*E0*/ }
+#elif ENABLED(FF_SILVER_PULLEY)
+	#define DEFAULT_AXIS_STEPS_PER_UNIT   { 94.139704, 94.139704, 400.0, 96.275202/*E0*/ }
+#else
+	#error Invalid pulley selection
+#endif
 /**
  * Default Max Feed Rate (mm/s)
  * Override with M203
  *                                      X, Y, Z [, I [, J [, K]]], E0 [, E1[, E2...]]
  */
-#define DEFAULT_MAX_FEEDRATE          { 300, 300, 5, 25 }
+#define DEFAULT_MAX_FEEDRATE          { 300, 300, 20, 27 }
 
 //#define LIMITED_MAX_FR_EDITING        // Limit edit via M203 or LCD to DEFAULT_MAX_FEEDRATE * 2
 #if ENABLED(LIMITED_MAX_FR_EDITING)
-  #define MAX_FEEDRATE_EDIT_VALUES    { 600, 600, 10, 50 } // ...or, set your own edit limits
+  #define MAX_FEEDRATE_EDIT_VALUES    { 600, 600, 40, 50 } // ...or, set your own edit limits
 #endif
 
 /**
@@ -1104,11 +1192,11 @@
  * Override with M201
  *                                      X, Y, Z [, I [, J [, K]]], E0 [, E1[, E2...]]
  */
-#define DEFAULT_MAX_ACCELERATION      { 3000, 3000, 100, 10000 }
+#define DEFAULT_MAX_ACCELERATION      { 1000, 1000, 150, 4000 }
 
-//#define LIMITED_MAX_ACCEL_EDITING     // Limit edit via M201 or LCD to DEFAULT_MAX_ACCELERATION * 2
+#define LIMITED_MAX_ACCEL_EDITING     // Limit edit via M201 or LCD to DEFAULT_MAX_ACCELERATION * 2
 #if ENABLED(LIMITED_MAX_ACCEL_EDITING)
-  #define MAX_ACCEL_EDIT_VALUES       { 6000, 6000, 200, 20000 } // ...or, set your own edit limits
+  #define MAX_ACCEL_EDIT_VALUES       { 3000, 3000, 500, 8000 } // ...or, set your own edit limits
 #endif
 
 /**
@@ -1119,9 +1207,9 @@
  *   M204 R    Retract Acceleration
  *   M204 T    Travel Acceleration
  */
-#define DEFAULT_ACCELERATION          3000    // X, Y, Z ... and E acceleration for printing moves
-#define DEFAULT_RETRACT_ACCELERATION  3000    // E acceleration for retracts
-#define DEFAULT_TRAVEL_ACCELERATION   3000    // X, Y, Z ... acceleration for travel (non printing) moves
+#define DEFAULT_ACCELERATION          200    // X, Y, Z ... and E acceleration for printing moves
+#define DEFAULT_RETRACT_ACCELERATION  1000    // E acceleration for retracts
+#define DEFAULT_TRAVEL_ACCELERATION   1000    // X, Y, Z ... acceleration for travel (non printing) moves
 
 /**
  * Default Jerk limits (mm/s)
@@ -1171,7 +1259,9 @@
  *
  * See https://github.com/synthetos/TinyG/wiki/Jerk-Controlled-Motion-Explained
  */
-//#define S_CURVE_ACCELERATION
+#if DISABLED(LIN_ADVANCE)
+  #define S_CURVE_ACCELERATION
+#endif
 
 //===========================================================================
 //============================= Z Probe Options =============================
@@ -1187,7 +1277,7 @@
  * The probe replaces the Z-MIN endstop and is used for Z homing.
  * (Automatically enables USE_PROBE_FOR_Z_HOMING.)
  */
-#define Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN
+//#define Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN
 
 // Force the use of the probe for Z-axis homing
 //#define USE_PROBE_FOR_Z_HOMING
@@ -1207,7 +1297,11 @@
  *      - normally-closed switches to GND and D32.
  *      - normally-open switches to 5V and D32.
  */
-//#define Z_MIN_PROBE_PIN 32 // Pin 32 is the RAMPS default
+#if ANY(FF_DREAMER_MACHINE, FF_DREAMER_NX_MACHINE)
+  #define Z_MIN_PROBE_PIN Z_MAX_PIN
+#else
+  #define Z_MIN_PROBE_PIN Z_MIN_PIN /* Inventor */
+#endif
 
 /**
  * Probe Type
@@ -1289,7 +1383,7 @@
 #endif
 
 // Duet Smart Effector (for delta printers) - https://bit.ly/2ul5U7J
-// When the pin is defined you can use M672 to set/reset the probe sensitivity.
+// When the pin is defined you can use M672 to set/reset the probe sensivity.
 //#define DUET_SMART_EFFECTOR
 #if ENABLED(DUET_SMART_EFFECTOR)
   #define SMART_EFFECTOR_MOD_PIN  -1  // Connect a GPIO pin to the Smart Effector MOD pin
@@ -1385,7 +1479,7 @@
 #define XY_PROBE_FEEDRATE (133*60)
 
 // Feedrate (mm/min) for the first approach when double-probing (MULTIPLE_PROBING == 2)
-#define Z_PROBE_FEEDRATE_FAST (4*60)
+#define Z_PROBE_FEEDRATE_FAST HOMING_FEEDRATE_Z
 
 // Feedrate (mm/min) for the "accurate" probe of each point
 #define Z_PROBE_FEEDRATE_SLOW (Z_PROBE_FEEDRATE_FAST / 2)
@@ -1526,18 +1620,35 @@
 // @section machine
 
 // Invert the stepper direction. Change (or reverse the motor connector) if an axis goes the wrong way.
-#define INVERT_X_DIR false
+#define INVERT_X_DIR true
 #define INVERT_Y_DIR true
-#define INVERT_Z_DIR false
+#define INVERT_Z_DIR true
 //#define INVERT_I_DIR false
 //#define INVERT_J_DIR false
 //#define INVERT_K_DIR false
 
 // @section extruder
-
 // For direct drive extruder v9 set to true, for geared extruder set to false.
-#define INVERT_E0_DIR false
-#define INVERT_E1_DIR false
+#if ANY(FF_DREAMER_MACHINE, FF_INVENTOR_MACHINE)
+  #if ENABLED(FF_EXTRUDER_SWAP)
+      #define INVERT_E0_DIR false
+      #if ENABLED(FF_DREAMER_OLD_MB)
+          #define INVERT_E1_DIR true
+      #else
+          #define INVERT_E1_DIR false
+      #endif
+  #else
+      #define INVERT_E1_DIR false
+      #if ENABLED(FF_DREAMER_OLD_MB)
+          #define INVERT_E0_DIR true
+      #else
+          #define INVERT_E0_DIR false
+      #endif
+  #endif
+#else
+  #define INVERT_E0_DIR true
+  #define INVERT_E1_DIR true
+#endif
 #define INVERT_E2_DIR false
 #define INVERT_E3_DIR false
 #define INVERT_E4_DIR false
@@ -1555,7 +1666,7 @@
  *  - Use a low value (i.e., Z_MIN_POS) if the nozzle falls down to the bed.
  *  - Use a large value (i.e., Z_MAX_POS) if the bed falls down, away from the nozzle.
  */
-//#define Z_IDLE_HEIGHT Z_HOME_POS
+#define Z_IDLE_HEIGHT Z_HOME_POS
 
 //#define Z_HOMING_HEIGHT  4      // (mm) Minimal Z height before homing (G28) for Z clearance above the bed, clamps, ...
                                   // Be sure to have this much clearance over your Z_MAX_POS to prevent grinding.
@@ -1564,26 +1675,55 @@
 
 // Direction of endstops when homing; 1=MAX, -1=MIN
 // :[-1,1]
-#define X_HOME_DIR -1
-#define Y_HOME_DIR -1
-#define Z_HOME_DIR -1
+#define X_HOME_DIR  1
+#define Y_HOME_DIR  1
+#if ENABLED(FF_INVENTOR_MACHINE)
+  #define Z_HOME_DIR  1
+#else
+  #define Z_HOME_DIR -1
+#endif
 //#define I_HOME_DIR -1
 //#define J_HOME_DIR -1
 //#define K_HOME_DIR -1
 
 // @section machine
 
-// The size of the printable area
-#define X_BED_SIZE 200
-#define Y_BED_SIZE 200
+// The size of the print bed
+#define X_BED_SIZE 230
+#define Y_BED_SIZE 150
+
+#if ENABLED(FF_EXTRUDER_SWAP)
+  #define FF_TOOL_OFFSET  34
+#else
+  #define FF_TOOL_OFFSET   0
+#endif
 
 // Travel limits (mm) after homing, corresponding to endstop positions.
-#define X_MIN_POS 0
-#define Y_MIN_POS 0
+#if ENABLED(FF_INVENTOR_MACHINE)
+  #define X_MAX_POS   (159.99-FF_TOOL_OFFSET)
+  #define Y_MAX_POS     75.00
+  #define X_MIN_POS  (-110.00-FF_TOOL_OFFSET)
+  #define Y_MIN_POS    -75.00
+#elif ENABLED(FF_DREAMER_MACHINE)
+  #define X_MAX_POS   (156.99-FF_TOOL_OFFSET)
+  #define Y_MAX_POS     79.99
+  #define X_MIN_POS  (-113.00-FF_TOOL_OFFSET)
+  #define Y_MIN_POS    -79.99
+#elif ENABLED(FF_DREAMER_NX_MACHINE)
+  #define X_MAX_POS    158.50
+  #define Y_MAX_POS     76.23
+  #define X_MIN_POS   -111.00
+  #define Y_MIN_POS    -76.23
+#else
+  #error Invalid printer model selection
+#endif
+
 #define Z_MIN_POS 0
-#define X_MAX_POS X_BED_SIZE
-#define Y_MAX_POS Y_BED_SIZE
-#define Z_MAX_POS 200
+#if ENABLED(FF_INVENTOR_MACHINE)
+  #define Z_MAX_POS 160
+#else
+  #define Z_MAX_POS 140
+#endif
 //#define I_MIN_POS 0
 //#define I_MAX_POS 50
 //#define J_MIN_POS 0
@@ -1623,7 +1763,7 @@
 #endif
 
 #if EITHER(MIN_SOFTWARE_ENDSTOPS, MAX_SOFTWARE_ENDSTOPS)
-  //#define SOFT_ENDSTOPS_MENU_ITEM  // Enable/Disable software endstops from the LCD
+  #define SOFT_ENDSTOPS_MENU_ITEM  // Enable/Disable software endstops from the LCD
 #endif
 
 /**
@@ -1639,13 +1779,15 @@
  * RAMPS-based boards use SERVO3_PIN for the first runout sensor.
  * For other boards you may need to define FIL_RUNOUT_PIN, FIL_RUNOUT2_PIN, etc.
  */
-//#define FILAMENT_RUNOUT_SENSOR
+#if DISABLED(USE_MKS_UI)
+  #define FILAMENT_RUNOUT_SENSOR
+#endif
 #if ENABLED(FILAMENT_RUNOUT_SENSOR)
-  #define FIL_RUNOUT_ENABLED_DEFAULT true // Enable the sensor on startup. Override with M412 followed by M500.
+  #define FIL_RUNOUT_ENABLED_DEFAULT false // Enable the sensor on startup. Override with M412 followed by M500.
   #define NUM_RUNOUT_SENSORS   1          // Number of sensors, up to one per extruder. Define a FIL_RUNOUT#_PIN for each.
 
-  #define FIL_RUNOUT_STATE     LOW        // Pin state indicating that filament is NOT present.
-  #define FIL_RUNOUT_PULLUP               // Use internal pullup for filament runout pins.
+  #define FIL_RUNOUT_STATE     HIGH        // Pin state indicating that filament is NOT present.
+  //#define FIL_RUNOUT_PULLUP             // Use internal pullup for filament runout pins.
   //#define FIL_RUNOUT_PULLDOWN           // Use internal pulldown for filament runout pins.
   //#define WATCH_ALL_RUNOUT_SENSORS      // Execute runout script on any triggering sensor, not only for the active extruder.
                                           // This is automatically enabled for MIXING_EXTRUDERs.
@@ -1743,7 +1885,7 @@
 //#define AUTO_BED_LEVELING_LINEAR
 //#define AUTO_BED_LEVELING_BILINEAR
 //#define AUTO_BED_LEVELING_UBL
-//#define MESH_BED_LEVELING
+#define MESH_BED_LEVELING
 
 /**
  * Normally G28 leaves leveling disabled on completion. Enable one of
@@ -1872,22 +2014,26 @@
  * Add a bed leveling sub-menu for ABL or MBL.
  * Include a guided procedure if manual probing is enabled.
  */
-//#define LCD_BED_LEVELING
+#define LCD_BED_LEVELING
 
 #if ENABLED(LCD_BED_LEVELING)
   #define MESH_EDIT_Z_STEP  0.025 // (mm) Step size while manually probing Z axis.
   #define LCD_PROBE_Z_RANGE 4     // (mm) Z Range centered on Z_MIN_POS for LCD Z adjustment
-  //#define MESH_EDIT_MENU        // Add a menu to edit mesh points
+  #define MESH_EDIT_MENU        // Add a menu to edit mesh points
 #endif
 
 // Add a menu item to move between bed corners for manual bed adjustment
-//#define LCD_BED_TRAMMING
+#define LCD_BED_TRAMMING
 
 #if ENABLED(LCD_BED_TRAMMING)
-  #define BED_TRAMMING_INSET_LFRB { 30, 30, 30, 30 } // (mm) Left, Front, Right, Back insets
+  #if ANY(FF_DREAMER_MACHINE, FF_INVENTOR_MACHINE)
+    #define BED_TRAMMING_INSET_LFRB { 40, 30, 40, 30 } // (mm) Left, Front, Right, Back insets
+  #else
+    #define BED_TRAMMING_INSET_LFRB { 30, 30, 30, 30 } // (mm) Left, Front, Right, Back insets
+  #endif
   #define BED_TRAMMING_HEIGHT      0.0        // (mm) Z height of nozzle at leveling points
-  #define BED_TRAMMING_Z_HOP       4.0        // (mm) Z height of nozzle between leveling points
-  //#define BED_TRAMMING_INCLUDE_CENTER       // Move to the center after the last corner
+  #define BED_TRAMMING_Z_HOP       5.0        // (mm) Z height of nozzle between leveling points
+  #define BED_TRAMMING_INCLUDE_CENTER         // Move to the center after the last corner
   //#define BED_TRAMMING_USE_PROBE
   #if ENABLED(BED_TRAMMING_USE_PROBE)
     #define BED_TRAMMING_PROBE_TOLERANCE 0.1  // (mm)
@@ -1924,7 +2070,7 @@
 // @section homing
 
 // The center of the bed is at (X=0, Y=0)
-//#define BED_CENTER_AT_0_0
+#define BED_CENTER_AT_0_0
 
 // Manually set the home position. Leave these undefined for automatic settings.
 // For DELTA this is the top-center of the Cartesian print volume.
@@ -1950,7 +2096,7 @@
 #endif
 
 // Homing speeds (mm/min)
-#define HOMING_FEEDRATE_MM_M { (50*60), (50*60), (4*60) }
+#define HOMING_FEEDRATE_MM_M { (50*60), (50*60), (8*60) }
 
 // Validate that endstops are triggered on homing moves
 #define VALIDATE_HOMING_ENDSTOPS
@@ -2027,12 +2173,12 @@
  *   M501 - Read settings from EEPROM. (i.e., Throw away unsaved changes)
  *   M502 - Revert settings to "factory" defaults. (Follow with M500 to init the EEPROM.)
  */
-//#define EEPROM_SETTINGS     // Persistent storage with M500 and M501
+#define EEPROM_SETTINGS     // Persistent storage with M500 and M501
 //#define DISABLE_M503        // Saves ~2700 bytes of flash. Disable for release!
-#define EEPROM_CHITCHAT       // Give feedback on EEPROM commands. Disable to save PROGMEM.
-#define EEPROM_BOOT_SILENT    // Keep M503 quiet and only give errors during first load
+//#define EEPROM_CHITCHAT       // Give feedback on EEPROM commands. Disable to save PROGMEM.
+//#define EEPROM_BOOT_SILENT    // Keep M503 quiet and only give errors during first load
 #if ENABLED(EEPROM_SETTINGS)
-  //#define EEPROM_AUTO_INIT  // Init EEPROM automatically on any errors.
+  #define EEPROM_AUTO_INIT  // Init EEPROM automatically on any errors.
   //#define EEPROM_INIT_NOW   // Init EEPROM on first boot after a new build.
 #endif
 
@@ -2084,11 +2230,11 @@
  *    P1  Raise the nozzle always to Z-park height.
  *    P2  Raise the nozzle by Z-park amount, limited to Z_MAX_POS.
  */
-//#define NOZZLE_PARK_FEATURE
+#define NOZZLE_PARK_FEATURE
 
 #if ENABLED(NOZZLE_PARK_FEATURE)
   // Specify a park position as { X, Y, Z_raise }
-  #define NOZZLE_PARK_POINT { (X_MIN_POS + 10), (Y_MAX_POS - 10), 20 }
+  #define NOZZLE_PARK_POINT { (X_MAX_POS - 10), (Y_MIN_POS + 10), 0 }
   #define NOZZLE_PARK_MOVE          0   // Park motion: 0 = XY Move, 1 = X Only, 2 = Y Only, 3 = X before Y, 4 = Y before X
   #define NOZZLE_PARK_Z_RAISE_MIN   2   // (mm) Always raise Z by at least this distance
   #define NOZZLE_PARK_XY_FEEDRATE 100   // (mm/s) X and Y axes feedrate (also used for delta Z axis)
@@ -2300,14 +2446,14 @@
  * SD Card support is disabled by default. If your controller has an SD slot,
  * you must uncomment the following option or it won't work.
  */
-//#define SDSUPPORT
+#define SDSUPPORT
 
 /**
  * SD CARD: ENABLE CRC
  *
  * Use CRC checks and retries on the SD communication.
  */
-//#define SD_CHECK_AND_RETRY
+#define SD_CHECK_AND_RETRY
 
 /**
  * LCD Menu Items
@@ -2370,7 +2516,7 @@
 //
 // Add individual axis homing items (Home X, Home Y, and Home Z) to the LCD menu.
 //
-//#define INDIVIDUAL_AXIS_HOMING_MENU
+#define INDIVIDUAL_AXIS_HOMING_MENU
 //#define INDIVIDUAL_AXIS_HOMING_SUBMENU
 
 //
@@ -2379,7 +2525,7 @@
 // If you have a speaker that can produce tones, enable it here.
 // By default Marlin assumes you have a buzzer with a fixed frequency.
 //
-//#define SPEAKER
+#define SPEAKER
 
 //
 // The duration and frequency for the UI feedback sound.
@@ -2388,8 +2534,8 @@
 // Note: Test audio output with the G-Code:
 //  M300 S<frequency Hz> P<duration ms>
 //
-//#define LCD_FEEDBACK_FREQUENCY_DURATION_MS 2
-//#define LCD_FEEDBACK_FREQUENCY_HZ 5000
+#define LCD_FEEDBACK_FREQUENCY_DURATION_MS  20
+#define LCD_FEEDBACK_FREQUENCY_HZ           2500
 
 //=============================================================================
 //======================== LCD / Controller Selection =========================
@@ -2794,6 +2940,7 @@
 //#define DGUS_LCD_UI_ORIGIN
 //#define DGUS_LCD_UI_FYSETC
 //#define DGUS_LCD_UI_HIPRECY
+
 //#define DGUS_LCD_UI_MKS
 //#define DGUS_LCD_UI_RELOADED
 #if ENABLED(DGUS_LCD_UI_MKS)
@@ -2855,6 +3002,23 @@
 // Usually paired with MKS Robin Nano V1.2
 //
 //#define MKS_ROBIN_TFT24
+#if ENABLED(USE_OLD_MARLIN_UI)
+  #define TFT_CLASSIC_UI
+#elif ENABLED(USE_MKS_UI)
+  #define TFT_LVGL_UI
+  #undef LCD_BED_LEVELING
+#else
+  #define TFT_COLOR_UI
+#endif
+#define TFT_GENERIC
+#define TFT_INTERFACE_FSMC
+#define TFT_RES_480x320
+/* from FF firmware: ILI9488, OTM4802 */
+#define DELAYED_BACKLIGHT_INIT
+#define USE_FLASHFORGE_TFT
+/* allow FF bootloader to load TFT config */
+//#define USE_FLASHFORGE_BOOTLOADER_TFT
+#define TFT_DRIVER                AUTO
 
 //
 // 320x240, 2.8", FSMC Display From MKS
@@ -2983,27 +3147,27 @@
 //
 // Touch Screen Settings
 //
-//#define TOUCH_SCREEN
+#define TOUCH_SCREEN
 #if ENABLED(TOUCH_SCREEN)
-  #define BUTTON_DELAY_EDIT  50 // (ms) Button repeat delay for edit screens
-  #define BUTTON_DELAY_MENU 250 // (ms) Button repeat delay for menus
+  #define BUTTON_DELAY_EDIT       50 // (ms) Button repeat delay for edit screens
+  #define BUTTON_DELAY_MENU       250 // (ms) Button repeat delay for menus
 
   //#define TOUCH_IDLE_SLEEP 300 // (s) Turn off the TFT backlight if set (5mn)
 
   #define TOUCH_SCREEN_CALIBRATION
+  //Invoke touchscreen calibration by default
+  #define TOUCH_CALIBRATION_X    17114
+  #define TOUCH_CALIBRATION_Y    -12430
+  #define TOUCH_OFFSET_X         -24
+  #define TOUCH_OFFSET_Y         345
 
-  //#define TOUCH_CALIBRATION_X 12316
-  //#define TOUCH_CALIBRATION_Y -8981
-  //#define TOUCH_OFFSET_X        -43
-  //#define TOUCH_OFFSET_Y        257
-  //#define TOUCH_ORIENTATION TOUCH_LANDSCAPE
-
+  #define TOUCH_ORIENTATION TOUCH_LANDSCAPE
   #if BOTH(TOUCH_SCREEN_CALIBRATION, EEPROM_SETTINGS)
     #define TOUCH_CALIBRATION_AUTO_SAVE // Auto save successful calibration values to EEPROM
   #endif
 
   #if ENABLED(TFT_COLOR_UI)
-    //#define SINGLE_TOUCH_NAVIGATION
+    #define SINGLE_TOUCH_NAVIGATION
   #endif
 #endif
 
@@ -3027,7 +3191,7 @@
 
 // Set number of user-controlled fans. Disable to use all board-defined fans.
 // :[1,2,3,4,5,6,7,8]
-//#define NUM_M106_FANS 1
+#define NUM_M106_FANS 3
 
 // Use software PWM to drive the fan, as for the heaters. This uses a very low frequency
 // which is not as annoying as with the hardware PWM. On the other hand, if this frequency
@@ -3039,7 +3203,7 @@
 // However, control resolution will be halved for each increment;
 // at zero value, there are 128 effective control positions.
 // :[0,1,2,3,4,5,6,7]
-#define SOFT_PWM_SCALE 0
+#define SOFT_PWM_SCALE 1
 
 // If SOFT_PWM_SCALE is set to a value higher than 0, dithering can
 // be used to mitigate the associated resolution loss. If enabled,
@@ -3059,7 +3223,7 @@
 //#define BLINKM
 
 // Support for PCA9632 PWM LED driver
-//#define PCA9632
+#define PCA9632
 
 // Support for PCA9533 PWM LED driver
 //#define PCA9533

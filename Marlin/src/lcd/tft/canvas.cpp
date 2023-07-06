@@ -63,14 +63,41 @@ void CANVAS::SetBackground(uint16_t color) {
   while (count--) *pointer++ = two_pixels;
 }
 
+#if ENABLED( FF_RUSSIAN_FIX )
+#include "../fontutils.h"
+static uint8_t read_byte_c(const uint8_t *byte) { return *byte; }
+#endif
+
 void CANVAS::AddText(uint16_t x, uint16_t y, uint16_t color, uint8_t *string, uint16_t maxWidth) {
+#if ENABLED( FF_RUSSIAN_FIX )
+  uint8_t is_wchar = ( x & 0x8000 ) != 0;
+  x &= ~0x8000;
+#endif
   if (endLine < y || startLine > y + GetFontHeight()) return;
 
   if (maxWidth == 0) maxWidth = width - x;
 
   uint16_t stringWidth = 0;
+#if DISABLED( FF_RUSSIAN_FIX )
   for (uint16_t i = 0 ; *(string + i) ; i++) {
     glyph_t *glyph = Glyph(string + i);
+#else
+  lchar_t wchar = 0;
+  while( *string ) {
+    uint8_t ch;
+    if( is_wchar )
+    {
+      string = (uint8_t*)get_utf8_value_cb(string, read_byte_c, wchar);
+      ch = uint8_t(wchar & 0x00FF);
+    }
+    else
+    {
+      ch = *string++;
+    }
+    if( !ch )
+      break;
+    glyph_t *glyph = Glyph( &ch );
+#endif
     if (stringWidth + glyph->BBXWidth > maxWidth) break;
     AddImage(x + stringWidth + glyph->BBXOffsetX, y + Font()->FontAscent - glyph->BBXHeight - glyph->BBXOffsetY, glyph->BBXWidth, glyph->BBXHeight, GREYSCALE1, ((uint8_t *)glyph) + sizeof(glyph_t), &color);
     stringWidth += glyph->DWidth;

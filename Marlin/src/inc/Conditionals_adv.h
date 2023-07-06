@@ -175,6 +175,8 @@
   #define TEMP_SENSOR_0_IS_AD8495 1
 #elif TEMP_SENSOR_0 == -1
   #define TEMP_SENSOR_0_IS_AD595 1
+#elif TEMP_SENSOR_0 == -666
+  #define TEMP_SENSOR_0_IS_ADS1118 1
 #elif TEMP_SENSOR_0 > 0
   #define TEMP_SENSOR_0_IS_THERMISTOR 1
   #if TEMP_SENSOR_0 == 1000
@@ -222,6 +224,8 @@
   #define TEMP_SENSOR_1_IS_AD8495 1
 #elif TEMP_SENSOR_1 == -1
   #define TEMP_SENSOR_1_IS_AD595 1
+#elif TEMP_SENSOR_1 == -666
+  #define TEMP_SENSOR_1_IS_ADS1118 1
 #elif TEMP_SENSOR_1 > 0
   #define TEMP_SENSOR_1_IS_THERMISTOR 1
   #if TEMP_SENSOR_1 == 1000
@@ -311,6 +315,9 @@
 #endif
 #if TEMP_SENSOR_0_IS_MAX31865 || TEMP_SENSOR_1_IS_MAX31865 || TEMP_SENSOR_REDUNDANT_IS_MAX31865
   #define HAS_MAX31865 1
+#endif
+#if TEMP_SENSOR_0_IS_ADS1118 || TEMP_SENSOR_1_IS_ADS1118
+  #define HAS_ADS1118 1
 #endif
 
 #if TEMP_SENSOR_2 == -4
@@ -556,6 +563,16 @@
   #endif
 #endif
 
+// Probe Temperature Compensation
+#if !TEMP_SENSOR_PROBE
+  #undef PTC_PROBE
+#endif
+#if !TEMP_SENSOR_BED
+  #undef PTC_BED
+#endif
+#if !HAS_EXTRUDERS
+  #undef PTC_HOTEND
+#endif
 #if ANY(PTC_PROBE, PTC_BED, PTC_HOTEND)
   #define HAS_PTC 1
 #endif
@@ -905,19 +922,19 @@
 #endif
 
 // Remove unused STEALTHCHOP flags
-#if NUM_AXES < 6
+#if LINEAR_AXES < 6
   #undef STEALTHCHOP_K
   #undef CALIBRATION_MEASURE_KMIN
   #undef CALIBRATION_MEASURE_KMAX
-  #if NUM_AXES < 5
+  #if LINEAR_AXES < 5
     #undef STEALTHCHOP_J
     #undef CALIBRATION_MEASURE_JMIN
     #undef CALIBRATION_MEASURE_JMAX
-    #if NUM_AXES < 4
+    #if LINEAR_AXES < 4
       #undef STEALTHCHOP_I
       #undef CALIBRATION_MEASURE_IMIN
       #undef CALIBRATION_MEASURE_IMAX
-      #if NUM_AXES < 3
+      #if LINEAR_AXES < 3
         #undef Z_IDLE_HEIGHT
         #undef STEALTHCHOP_Z
         #undef Z_PROBE_SLED
@@ -927,7 +944,7 @@
         #undef ENABLE_LEVELING_FADE_HEIGHT
         #undef NUM_Z_STEPPERS
         #undef CNC_WORKSPACE_PLANES
-        #if NUM_AXES < 2
+        #if LINEAR_AXES < 2
           #undef STEALTHCHOP_Y
         #endif
       #endif

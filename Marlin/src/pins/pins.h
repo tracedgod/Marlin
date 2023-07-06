@@ -633,6 +633,8 @@
   #include "stm32f4/pins_RUMBA32_BTT.h"         // STM32F4                                env:rumba32
 #elif MB(BLACK_STM32F407VE)
   #include "stm32f4/pins_BLACK_STM32F407VE.h"   // STM32F4                                env:STM32F407VE_black
+#elif MB(FF_MOTHERBOARD)
+  #include "stm32f4/pins_FF_MOTHERBOARD.h"     // STM32F4                                env:FF_F407ZG
 #elif MB(STEVAL_3DP001V1)
   #include "stm32f4/pins_STEVAL_3DP001V1.h"     // STM32F4                                env:STM32F401VE_STEVAL
 #elif MB(BTT_SKR_PRO_V1_1)
@@ -877,6 +879,7 @@
   #undef BOARD_STM32F103R
   #undef BOARD_ESP32
   #undef BOARD_STEVAL
+  #undef BOARD_BIGTREE_SKR_MINI_E3
   #undef BOARD_BIGTREE_SKR_V1_1
   #undef BOARD_BIGTREE_SKR_V1_3
   #undef BOARD_BIGTREE_SKR_V1_4
@@ -884,7 +887,6 @@
   #undef BOARD_BIGTREE_BTT002_V1_0
   #undef BOARD_BIGTREE_SKR_PRO_V1_1
   #undef BOARD_BIGTREE_SKR_MINI_V1_1
-  #undef BOARD_BIGTREE_SKR_MINI_E3
   #undef BOARD_BIGTREE_SKR_E3_DIP
   #undef BOARD_RUMBA32
   #undef BOARD_RUMBA32_AUS3D

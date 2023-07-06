@@ -40,6 +40,7 @@
 #define PCT_TO_PWM(X) ((X) * 255 / 100)
 #define PCT_TO_SERVO(X) ((X) * 180 / 100)
 
+
 // Laser/Cutter operation mode
 enum CutterMode : int8_t {
   CUTTER_MODE_ERROR = -1,
@@ -293,7 +294,7 @@ public:
        * If not set defaults to 80% power
        */
       static void test_fire_pulse() {
-        BUZZ(30, 3000);
+        TERN_(HAS_BEEPER, buzzer.tone(30, 3000));
         cutter_mode = CUTTER_MODE_STANDARD;// Menu needs standard mode.
         laser_menu_toggle(true);           // Laser On
         delay(testPulse);                  // Delay for time set by user in pulse ms menu screen.

@@ -36,7 +36,7 @@
 #include "../../marlinui.h"
 #include "../../../HAL/shared/Delay.h"
 
-#if HAS_SOUND
+#if HAS_BUZZER
   #include "../../../libs/buzzer.h"
 #endif
 
@@ -50,7 +50,9 @@ ENCODER_Rate EncoderRate;
 
 // TODO: Replace with ui.quick_feedback
 void Encoder_tick() {
-  TERN_(HAS_BEEPER, if (ui.sound_on) buzzer.click(10));
+  #if PIN_EXISTS(BEEPER)
+    if (ui.sound_on) buzzer.click(10);
+  #endif
 }
 
 // Encoder initialization
@@ -64,7 +66,7 @@ void Encoder_Configuration() {
   #if BUTTON_EXISTS(ENC)
     SET_INPUT_PULLUP(BTN_ENC);
   #endif
-  #if HAS_BEEPER
+  #if PIN_EXISTS(BEEPER)
     SET_OUTPUT(BEEPER_PIN);     // TODO: Use buzzer.h which already inits this
   #endif
 }

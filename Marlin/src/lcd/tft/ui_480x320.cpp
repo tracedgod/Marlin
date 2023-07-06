@@ -624,7 +624,11 @@ static void drawCurESelection() {
 static void drawMessage(PGM_P const msg) {
   tft.canvas(X_MARGIN, TFT_HEIGHT - Y_MARGIN - 34, TFT_HEIGHT / 2, 34);
   tft.set_background(COLOR_BACKGROUND);
+#if ENABLED( FF_RUSSIAN_FIX )
+  tft.add_text(0|0x8000, 0, COLOR_YELLOW, msg);
+#else
   tft.add_text(0, 0, COLOR_YELLOW, msg);
+#endif
 }
 
 static void drawMessage(FSTR_P const fmsg) { drawMessage(FTOP(fmsg)); }
