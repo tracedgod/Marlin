@@ -152,7 +152,7 @@
 #endif
 
 #if ENABLED(HAS_ADS1118)
-#include HAL_PATH( ../HAL, hotend/ads1118.h)
+  #include HAL_PATH( ../HAL, hotend/ads1118.h)
 #endif
 
 #if ENABLED(MPCTEMP)
