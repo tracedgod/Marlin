@@ -64,7 +64,7 @@ void CANVAS::SetBackground(uint16_t color) {
 }
 
 #if ENABLED( FF_RUSSIAN_FIX )
-#include "../fontutils.h"
+#include "../utf8.h"
 static uint8_t read_byte_c(const uint8_t *byte) { return *byte; }
 #endif
 
