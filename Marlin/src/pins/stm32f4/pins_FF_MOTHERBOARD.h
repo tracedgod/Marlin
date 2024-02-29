@@ -191,7 +191,7 @@ thermosensor K-couple ADS1118
 #define CHAMBER_FAN_INDEX                   2
 
 /* part colling fan aka FAN0 */
-#define FAN_PIN                             PF5
+#define FAN0_PIN                              PF5
 //#define FAN1_PIN                            CHAMBER_AUTO_FAN_PIN
 #define FAN_SOFT_PWM
 
