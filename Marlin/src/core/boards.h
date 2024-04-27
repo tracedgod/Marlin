@@ -444,6 +444,7 @@
 #define BOARD_FYSETC_SPIDER_KING407   5242  // FYSETC Spider King407 (STM32F407ZG)
 #define BOARD_MKS_SKIPR_V1            5243  // MKS SKIPR v1.0 all-in-one board (STM32F407VE)
 #define BOARD_TRONXY_V10              5244  // TRONXY V10 (STM32F446ZE)
+#define BOARD_FLASHFORGE_F407ZG       5245  // FlashForge Core Board (STM32F407ZG) as found in the FlashForge Dreamer, DreamerNX, Inventor, Dremel 3D20, PowerSpec Ultra3D, & Monoprice Inventor I
 
 //
 // ARM Cortex-M7

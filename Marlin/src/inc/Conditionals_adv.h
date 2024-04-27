@@ -349,7 +349,9 @@
 #endif
 
 #if TEMP_SENSOR_IS_MAX_TC(0)
-  #if TEMP_SENSOR_0 == -5
+  #if TEMP_SENSOR_0 == -6
+    #define TEMP_SENSOR_0_IS_ADS1118 1
+  #elif TEMP_SENSOR_0 == -5
     #define TEMP_SENSOR_0_IS_MAX31865 1
     #define TEMP_SENSOR_0_MAX_TC_TMIN    0
     #define TEMP_SENSOR_0_MAX_TC_TMAX 1024
@@ -403,7 +405,9 @@
   #endif
 
   #if TEMP_SENSOR_1 != TEMP_SENSOR_0
-    #if   TEMP_SENSOR_1 == -5
+    #if   TEMP_SENSOR_1 == -6
+      #error "If ADS1118 Thermocouple (-6) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must matxch."
+    #elif   TEMP_SENSOR_1 == -5
       #error "If MAX31865 Thermocouple (-5) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must match."
     #elif TEMP_SENSOR_1 == -3
       #error "If MAX31855 Thermocouple (-3) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must match."
@@ -411,6 +415,8 @@
       #error "If MAX6675 Thermocouple (-2) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must match."
     #endif
   #endif
+#elif TEMP_SENSOR_1 == -6
+  #define TEMP_SENSOR_1_IS_ADS1118 1
 #elif TEMP_SENSOR_1 == -4
   #define TEMP_SENSOR_1_IS_AD8495 1
 #elif TEMP_SENSOR_1 == -1
@@ -446,7 +452,9 @@
   #endif
 
   #if TEMP_SENSOR_2 != TEMP_SENSOR_0
-    #if   TEMP_SENSOR_2 == -5
+    #if TEMP_SENSOR_2 == -6
+      #error "If ADS1118 Thermocouple (-6) is used for TEMP_SENSOR_2 then TEMP_SENSOR_0 must match."
+    #elif   TEMP_SENSOR_2 == -5
       #error "If MAX31865 Thermocouple (-5) is used for TEMP_SENSOR_2 then TEMP_SENSOR_0 must match."
     #elif TEMP_SENSOR_2 == -3
       #error "If MAX31855 Thermocouple (-3) is used for TEMP_SENSOR_2 then TEMP_SENSOR_0 must match."
@@ -596,6 +604,9 @@
 #if TEMP_SENSOR_0_IS_MAX31865 || TEMP_SENSOR_1_IS_MAX31865 || TEMP_SENSOR_2_IS_MAX31865 || TEMP_SENSOR_BED_IS_MAX31865 || TEMP_SENSOR_REDUNDANT_IS_MAX31865
   #define HAS_MAX31865 1
 #endif
+#if TEMP_SENSOR_0_IS_ADS1118 || TEMP_SENSOR_1_IS_ADS1118 || TEMP_SENSOR_2_IS_ADS1118 || TEMP_SENSOR_BED_IS_ADS1118
+  #define HAS_ADS1118 1
+#endif
 
 #if TEMP_SENSOR_3 == -4
   #define TEMP_SENSOR_3_IS_AD8495 1
@@ -702,6 +713,8 @@
     #define TEMP_SENSOR_BED_MAX_TC_TMIN    0
     #define TEMP_SENSOR_BED_MAX_TC_TMAX 1024
   #endif
+#elif TEMP_SENSOR_BED == -6
+  #define TEMP_SENSOR_BED_IS_ADS1118 1
 #elif TEMP_SENSOR_BED == -4
   #define TEMP_SENSOR_BED_IS_AD8495 1
 #elif TEMP_SENSOR_BED == -1

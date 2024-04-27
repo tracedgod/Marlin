@@ -189,6 +189,11 @@
 //#define MAX31865_WIRE_OHMS_2              0.0f
 
 /**
+ * Thermocouple Options - for ADS1118 (-6).
+ */
+// todo - add configs
+
+/**
  * Hephestos 2 24V heated bed upgrade kit.
  * https://www.en3dstudios.com/product/bq-hephestos-2-heated-bed-kit/
  */

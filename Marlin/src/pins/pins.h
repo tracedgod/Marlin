@@ -733,6 +733,8 @@
   #include "stm32f4/pins_TRONXY_V10.h"              // STM32F4                              env:STM32F446_tronxy
 #elif MB(CREALITY_F401RE)
   #include "stm32f4/pins_CREALITY_F401.h"           // STM32F4                              env:STM32F401RE_creality
+#elif MB(FLASHFORGE_F407ZG)
+  #include "stm32f4/pins_FLASHFORGE_F407ZG.h"       // STM32F4                              env:FLASHFORGE_F407ZG
 
 //
 // ARM Cortex-M7

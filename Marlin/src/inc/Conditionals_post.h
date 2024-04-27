@@ -754,6 +754,59 @@
 #endif // HAS_MAX_TC
 
 /**
+ * Compatibility layer for ADS1118 (SPI) temp boards
+ */
+
+#define TEMP_SENSOR_IS_ANY_ADS1118(n) (TEMP_SENSOR_IS_ADS1118(n))
+
+#if HAS_ADS1118
+
+  // Software SPI - enable if MISO/SCK are defined.
+  #if TEMP_SENSOR_IS_ANY_ADS1118(0) && DISABLED(TEMP_SENSOR_0_FORCE_HW_SPI) && PINS_EXIST(TEMP_0_MISO, TEMP_0_SCK)
+    #if TEMP_SENSOR_0_IS_ADS1118 && !PIN_EXISTS(TEMP_0_MOSI)
+      #error "TEMP_SENSOR_0 ADS1118 requires TEMP_0_MOSI_PIN defined for Software SPI. To use Hardware SPI instead, undefine MISO/SCK or enable TEMP_SENSOR_0_FORCE_HW_SPI."
+    #else
+      #define TEMP_SENSOR_0_HAS_SPI_PINS 1
+    #endif
+  #endif
+
+  #if TEMP_SENSOR_IS_ANY_ADS1118(1) && DISABLED(TEMP_SENSOR_1_FORCE_HW_SPI) && PINS_EXIST(TEMP_1_MISO, TEMP_1_SCK)
+    #if TEMP_SENSOR_1_IS_ADS1118 && !PIN_EXISTS(TEMP_1_MOSI)
+      #error "TEMP_SENSOR_1 ADS1118 requires TEMP_1_MOSI_PIN defined for Software SPI. To use Hardware SPI instead, undefine MISO/SCK or enable TEMP_SENSOR_1_FORCE_HW_SPI."
+    #else
+      #define TEMP_SENSOR_1_HAS_SPI_PINS 1
+    #endif
+  #endif
+
+  #if TEMP_SENSOR_IS_ANY_ADS1118(2) && DISABLED(TEMP_SENSOR_2_FORCE_HW_SPI) && PINS_EXIST(TEMP_2_MISO, TEMP_2_SCK)
+    #if TEMP_SENSOR_2_IS_ADS1118 && !PIN_EXISTS(TEMP_2_MOSI)
+      #error "TEMP_SENSOR_2 ADS1118 requires TEMP_2_MOSI_PIN defined for Software SPI. To use Hardware SPI instead, undefine MISO/SCK or enable TEMP_SENSOR_2_FORCE_HW_SPI."
+    #else
+      #define TEMP_SENSOR_2_HAS_SPI_PINS 1
+    #endif
+  #endif
+
+  #if (TEMP_SENSOR_IS_ANY_ADS1118(BED)) && DISABLED(TEMP_SENSOR_BED_FORCE_HW_SPI) && PINS_EXIST(TEMP_BED_MISO, TEMP_BED_SCK)
+    #if TEMP_SENSOR_BED_IS_ADS1118 && !PIN_EXISTS(TEMP_BED_MOSI)
+      #error "TEMP_SENSOR_BED ADS1118 requires TEMP_BED_MOSI_PIN defined for Software SPI. To use Hardware SPI instead, undefine MISO/SCK or enable TEMP_SENSOR_BED_FORCE_HW_SPI."
+    #else
+      #define TEMP_SENSOR_BED_HAS_SPI_PINS 1
+    #endif
+  #endif
+
+  //
+  // User-defined thermocouple libraries
+  //
+  // Add LIB_ADS1118 to the build_flags
+  // to select a USER library for ADS1118
+  //
+  #if ALL(HAS_ADS1118, LIB_ADS1118)
+    #define USE_LIB_ADS1118 1
+  #endif
+
+#endif  // HAS_ADS1118
+
+/**
  * X_DUAL_ENDSTOPS endstop reassignment
  */
 #if ENABLED(X_DUAL_ENDSTOPS)
@@ -2186,7 +2239,7 @@
 //
 // ADC Temp Sensors (Thermistor or Thermocouple with amplifier ADC interface)
 //
-#define HAS_ADC_TEST(P) (TEMP_SENSOR(P) && PIN_EXISTS(TEMP_##P) && !TEMP_SENSOR_IS_MAX_TC(P) && !TEMP_SENSOR_##P##_IS_DUMMY)
+#define HAS_ADC_TEST(P) (TEMP_SENSOR(P) && PIN_EXISTS(TEMP_##P) && NONE(TEMP_SENSOR_IS_MAX_TC(P), TEMP_SENSOR_##P##_IS_ADS1118, TEMP_SENSOR_##P##_IS_DUMMY))
 #if HOTENDS > 0 && HAS_ADC_TEST(0)
   #define HAS_TEMP_ADC_0 1
 #endif
@@ -2233,7 +2286,7 @@
   #define HAS_TEMP_ADC_REDUNDANT 1
 #endif
 
-#define HAS_TEMP(N) (TEMP_SENSOR_IS_MAX_TC(N) || HAS_TEMP_ADC_##N || TEMP_SENSOR_##N##_IS_DUMMY)
+#define HAS_TEMP(N) (TEMP_SENSOR_IS_MAX_TC(N) || ANY(HAS_TEMP_ADC_##N, TEMP_SENSOR_##N##_IS_ADS1118, TEMP_SENSOR_##N##_IS_DUMMY))
 #if HAS_HOTEND && HAS_TEMP(0)
   #define HAS_TEMP_HOTEND 1
 #endif

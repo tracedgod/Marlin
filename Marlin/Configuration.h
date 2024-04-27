@@ -523,6 +523,7 @@
  * ================================================================
  *  SPI RTD/Thermocouple Boards
  * ================================================================
+ *    -6 : ADS1118 with Thermocouple, -40°C to +125°C   (only for sensors 0-2 and bed)
  *    -5 : MAX31865 with Pt100/Pt1000, 2, 3, or 4-wire  (only for sensors 0-2 and bed)
  *                  NOTE: You must uncomment/set the MAX31865_*_OHMS_n defines below.
  *    -3 : MAX31855 with Thermocouple, -200°C to +700°C (only for sensors 0-2 and bed)
