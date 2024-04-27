@@ -467,6 +467,8 @@
 #define BOARD_MELLOW_FLY_E3_V2        5249  // Mellow Fly E3 V2 (STM32F407VG)
 #define BOARD_FYSETC_CHEETAH_V30      5250  // FYSETC Cheetah V3.0 (STM32F446RC)
 #define BOARD_BLACKBEEZMINI_V1        5251  // BlackBeezMini V1 (STM32F401CCU6)
+#define BOARD_FLASHFORGE_F407ZG       5252  // FlashForge Core Board (STM32F407ZG) as found in the FlashForge Dreamer, DreamerNX, Inventor, Dremel 3D20, PowerSpec Ultra3D, & Monoprice Inventor I
+
 
 //
 // ARM Cortex-M7
