@@ -101,9 +101,7 @@
   #define HAS_MAXTC_LIBRARIES 1
 #endif
 
-// ADS1118 related macros
-#define TEMP_SENSOR_IS_ADS1118(n) (ENABLED(TEMP_SENSOR_##n##_IS_ADS1118)
-
+// ADS1118 library
 #if HAS_ADS1118 && USE_LIB_ADS1118
   #include "../lib/ADS1118.h"
 #endif
@@ -116,16 +114,16 @@
 //  2. CS, MISO, and SCK pins defined:          Software SPI on a separate bus, as defined by MISO, SCK.
 //  3. CS, MISO, and SCK pins w/ FORCE_HW_SPI:  Hardware SPI on the default bus, ignoring MISO, SCK.
 //
-#if EITHER(TEMP_SENSOR_IS_ANY_MAX_TC(0), TEMP_SENSOR_IS_ANY_ADS1118(0)) && TEMP_SENSOR_0_HAS_SPI_PINS && DISABLED(TEMP_SENSOR_FORCE_HW_SPI)
+#if TEMP_SENSOR_IS_ANY_MAX_TC(0) && TEMP_SENSOR_0_HAS_SPI_PINS && DISABLED(TEMP_SENSOR_FORCE_HW_SPI)
   #define TEMP_SENSOR_0_USES_SW_SPI 1
 #endif
-#if EITHER(TEMP_SENSOR_IS_ANY_MAX_TC(1), TEMP_SENSOR_IS_ANY_ADS1118(1)) && TEMP_SENSOR_1_HAS_SPI_PINS && DISABLED(TEMP_SENSOR_FORCE_HW_SPI)
+#if TEMP_SENSOR_IS_ANY_MAX_TC(1) && TEMP_SENSOR_1_HAS_SPI_PINS && DISABLED(TEMP_SENSOR_FORCE_HW_SPI)
   #define TEMP_SENSOR_1_USES_SW_SPI 1
 #endif
-#if EITHER(TEMP_SENSOR_IS_ANY_MAX_TC(2), TEMP_SENSOR_IS_ANY_ADS1118(2)) && TEMP_SENSOR_2_HAS_SPI_PINS && DISABLED(TEMP_SENSOR_FORCE_HW_SPI)
+#if TEMP_SENSOR_IS_ANY_MAX_TC(2) && TEMP_SENSOR_2_HAS_SPI_PINS && DISABLED(TEMP_SENSOR_FORCE_HW_SPI)
   #define TEMP_SENSOR_2_USES_SW_SPI 1
 #endif
-#if EITHER(TEMP_SENSOR_IS_ANY_MAX_TC(BED), TEMP_SENSOR_IS_ANY_ADS1118(BED)) && TEMP_SENSOR_0_HAS_SPI_PINS && DISABLED(TEMP_SENSOR_FORCE_HW_SPI)
+#if TEMP_SENSOR_IS_ANY_MAX_TC(BED) && TEMP_SENSOR_0_HAS_SPI_PINS && DISABLED(TEMP_SENSOR_FORCE_HW_SPI)
   #define TEMP_SENSOR_BED_USES_SW_SPI 1
 #endif
 
@@ -2383,7 +2381,7 @@ void Temperature::task() {
           return TEMP_AD595(raw);
         #elif TEMP_SENSOR_0_IS_AD8495
           return TEMP_AD8495(raw);
-        #elif TEMP_SENSOR_0_IS_ADS1118    // todo - fix to read actual temps for ADS1118
+        #elif TEMP_SENSOR_IS_ADS1118(0)    // todo - fix to read actual temps for ADS1118
           return raw/10.0f;
         #else
           break;
@@ -2404,7 +2402,7 @@ void Temperature::task() {
           return TEMP_AD595(raw);
         #elif TEMP_SENSOR_1_IS_AD8495
           return TEMP_AD8495(raw);
-        #elif TEMP_SENSOR_1_IS_ADS1118    // todo - fix to read actual temps for ADS1118
+        #elif TEMP_SENSOR_IS_ADS1118(1)    // todo - fix to read actual temps for ADS1118
           return raw/10.0f;
         #else
           break;
@@ -2425,7 +2423,7 @@ void Temperature::task() {
           return TEMP_AD595(raw);
         #elif TEMP_SENSOR_2_IS_AD8495
           return TEMP_AD8495(raw);
-        #elif TEMP_SENSOR_2_IS_ADS1118    // todo - fix to read actual temps for ADS1118
+        #elif TEMP_SENSOR_IS_ADS1118(2)    // todo - fix to read actual temps for ADS1118
           return raw/10.0f;
         #else
           break;
@@ -2437,8 +2435,6 @@ void Temperature::task() {
           return TEMP_AD595(raw);
         #elif TEMP_SENSOR_3_IS_AD8495
           return TEMP_AD8495(raw);
-        #elif TEMP_SENSOR_3_IS_ADS1118    // todo - fix to read actual temps for ADS1118
-          return raw/10.0f;
         #else
           break;
         #endif
@@ -2523,7 +2519,7 @@ void Temperature::task() {
       return TEMP_AD595(raw);
     #elif TEMP_SENSOR_BED_IS_AD8495
       return TEMP_AD8495(raw);
-    #elif TEMP_SENSOR_BED_IS_ADS1118
+    #elif TEMP_SENSOR_IS_ADS1118(BED)
       return raw/10.0f;             // todo - fix to read actual temps for ADS1118
     #else
       UNUSED(raw);

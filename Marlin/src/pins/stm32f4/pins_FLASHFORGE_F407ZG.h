@@ -183,7 +183,7 @@ thermosensor K-couple ADS1118
 #define TEMP_CHAMBER_PIN                    PC4 /* NTC2 */
 
 /* SPI ADS1118 (16-Bit, 860SPS, dual-channel ADC) */
-#define HAS_ADS1118                         1
+//#define HAS_ADS1118                         1
 #define TEMP_0_CS_PIN                       PA4
 #define TEMP_1_CS_PIN                       TEMP_0_CS_PIN
 #define ADS1118_CS_PIN                      TEMP_0_CS_PIN
@@ -234,11 +234,11 @@ thermosensor K-couple ADS1118
 //   #define ONBOARD_SDIO                            // Use SDIO for onboard SD
 // 
 //   #if DISABLED(ONBOARD_SDIO)
-     #define SOFTWARE_SPI                          // Use soft SPI for onboard SD
-     #define SDSS                            PC11
+//     #define SOFTWARE_SPI                          // Use soft SPI for onboard SD
+//     #define SDSS                            PC11
      #define SD_SCK_PIN                      PC12
      #define SD_MISO_PIN                     PC8
-     #define SD_MOSI_PIN                     PD2
+//     #define SD_MOSI_PIN                     PD2
 //   #endif
 // 
 // #endif

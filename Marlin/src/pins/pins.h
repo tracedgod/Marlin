@@ -821,7 +821,7 @@
 #elif MB(BLACKBEEZMINI_V1)
   #include "stm32f4/pins_BLACKBEEZMINI.h"           // STM32F4                              env:BLACKBEEZMINI_V1
 #elif MB(FLASHFORGE_F407ZG)
-  #include "stm32f4/pins_FLASHFORGE_F407ZG.h"       // STM32F4                              env:FLASHFORGE_F407ZG
+  #include "stm32f4/pins_FLASHFORGE_F407ZG.h"       // STM32F4                              env:FlashForge_Dreamer
 
 //
 // ARM Cortex-M7

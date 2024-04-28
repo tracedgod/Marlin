@@ -428,7 +428,7 @@
 
   #if TEMP_SENSOR_1 != TEMP_SENSOR_0
     #if   TEMP_SENSOR_1 == -6
-      #error "If ADS1118 Thermocouple (-6) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must matxch."
+      #error "If ADS1118 Thermocouple (-6) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must match."
     #elif   TEMP_SENSOR_1 == -5
       #error "If MAX31865 Thermocouple (-5) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must match."
     #elif TEMP_SENSOR_1 == -3
