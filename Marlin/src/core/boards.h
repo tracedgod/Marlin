@@ -471,6 +471,11 @@
 
 
 //
+// Other ARM Cortex-M4
+//
+#define BOARD_CREALITY_CR4NS          5300  // Creality CR4NS200320C13 (GD32F303RET6) as found in the Ender-3 V3 SE
+
+//
 // ARM Cortex-M7
 //
 
