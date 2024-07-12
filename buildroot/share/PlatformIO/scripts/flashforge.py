@@ -1,8 +1,14 @@
-#
-# flashforge.py
-# Customizations for FlashForge build environments:
-#   env: FLASHFORGE_DREAMER       FlashForge Dreamer
 # 
+#   *========================================================================*
+#   | File: flashforge.py                                                    |
+#   | Author: Trace Bowes (tracedgod)                                        |
+#   | Description: Post-Build Firmware Encoding on FlashForge_FF407ZG Boards |
+#   |------------------------------------------------------------------------|
+#   | Used in the following Environments:                                    |
+#   | env: FLASHFORGE_DREAMER       FlashForge Dreamer                       |
+#   *========================================================================*
+# 
+
 import pioutil
 if pioutil.is_pio_build():
     import os,struct,marlin
@@ -28,98 +34,108 @@ if pioutil.is_pio_build():
         0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16,
     ]
 
-    def xor_byte(data):
-        if data & 0x80:
-            return ((data << 1) ^ 0x1B) & 0xFF
+    xor_key_table = [bytearray(16) for _ in range(11)]
+
+    def xor_data_buffer(pbuf, pkey, size):
+        if isinstance(pkey, int):
+            key_int = [pkey] * size
         else:
-            return (data << 1) & 0xFF
-
-    def generate_xor_table(key):
-        xor_key_table = [bytearray(key, 'utf-8') for _ in range(11)]
-        xor_key = 1
-
-        for i in range(4, 44):
-            index = i // 4
-            xor_key_table[index] = xor_key_table[index - 1][:]
-
-            if i % 4 == 0:
-                xor_key_table[index] = xor_key_table[index][1:] + xor_key_table[index][:1]
-                xor_key_table[index] = bytes(swap_table_encode[x] for x in xor_key_table[index])
-                xor_key_table[index] = bytearray(xor_key_table[index])
-                xor_key_table[index] = bytearray((xor_key_table[index][j] ^ xor_key) for j in range(16))
-                xor_key = xor_byte(xor_key & 0xFF)
-
-            for j in range(16):
-                xor_key_table[index][j] ^= xor_key_table[index - 1][j]
-
-        return xor_key_table
-
-    def xor_data_buffer(pbuf, pkey):
+            key_int = [ord(c) for c in pkey]
         pbuf = bytearray(pbuf)
-        pkey = bytearray(pkey)
-
-        for i in range(len(pbuf)):
-            pbuf[i] ^= pkey[i % len(pkey)]
-
-        return bytes(pbuf)
-
-    def swap_data_buffer(pdata):
+        for i in range(size):
+            pbuf[i] ^= key_int[i % len(key_int)]
+        return pbuf
+    
+    def swap_data_buffer(pdata, size):
+        swap_table = swap_table_encode
         pdata = bytearray(pdata)
-
-        for i in range(len(pdata)):
-            if pdata[i] < len(swap_table_encode):
-                pdata[i] = swap_table_encode[pdata[i]]
-
-        return bytes(pdata)
+        for i in range(size):
+            pdata[i] = swap_table[pdata[i]]
 
     def shuffle_data_buffer(pdata):
+        tmp = [0] * 4
         pdata = bytearray(pdata)
-        tmp = bytearray(4)
+        if len(pdata) < 16:
+            return
 
-        # Iterate over the range of indices that are within the length of pdata
-        for i in range(1, min(len(pdata), 17), 4):
+        for i in range(1, 4):
             for j in range(4):
                 if 4 * j + i < len(pdata):
                     tmp[j] = pdata[4 * j + i]
                 else:
-                    tmp[j] = 0
-            pos = 4 - i
+                    return
+            pos = i
             for n in range(4):
-                index = 4 * n + i
-                if index < len(pdata):
-                    pdata[index] = tmp[(pos + n) % 4]
+                if 4 * n + i < len(pdata):
+                    pdata[4 * n + i] = tmp[(pos + n) % 4]
 
-        return bytes(pdata)
+    def xor_byte(data):
+        return (data << 1) ^ 0x1B if data & 0x80 else (data << 1) & 0xFF
 
     def xor_data_block(pdata):
+        xor_array = [0] * 4
         pdata = bytearray(pdata)
-        xor_array = bytearray(4)
-        
-        for i in range(0, len(pdata), 4):
-            xor_key = pdata[i] ^ pdata[i + 1] ^ pdata[i + 2] ^ pdata[i + 3]
-            xor_array[0] = xor_byte(pdata[i] ^ pdata[i + 1]) ^ (pdata[i] ^ xor_key)
-            xor_array[1] = xor_byte(pdata[i + 1] ^ pdata[i + 2]) ^ (pdata[i + 1] ^ xor_key)
-            xor_array[2] = xor_byte(pdata[i + 2] ^ pdata[i + 3]) ^ (pdata[i + 2] ^ xor_key)
-            xor_array[3] = xor_byte(pdata[i + 3] ^ pdata[i]) ^ (pdata[i + 3] ^ xor_key)
-            pdata[i:i + 4] = xor_array
-    
-        return bytes(pdata)
-
-    def encrypt_data_block(pdata, xor_key_table):
-        pdata = xor_data_buffer(pdata, xor_key_table[0])
-        pdata = swap_data_buffer(pdata)
-        pdata = shuffle_data_buffer(pdata)
-        pdata = xor_data_block(pdata)
-        pdata = xor_data_buffer(pdata, xor_key_table[1])
-
+        for i in range(4):
+            xor_key = pdata[0] ^ pdata[1] ^ pdata[2] ^ pdata[3]
+            xor_array[0] = xor_byte(pdata[0] ^ pdata[1]) ^ (pdata[0] ^ xor_key)
+            xor_array[1] = xor_byte(pdata[1] ^ pdata[2]) ^ (pdata[1] ^ xor_key)
+            xor_array[2] = xor_byte(pdata[2] ^ pdata[3]) ^ (pdata[2] ^ xor_key)
+            xor_array[3] = xor_byte(pdata[3] ^ pdata[0]) ^ (pdata[3] ^ xor_key)
+            xor_array = [x % 256 for x in xor_array]
+            pdata[:4] = xor_array
         return pdata
 
-    def encrypt_data_buffer(pdata, size, pkey):
-        xor_key_table = generate_xor_table(pkey)
-        encrypted_data = b""
-        for i in range(0, size, 16):
-            encrypted_data += encrypt_data_block(pdata[i:i + 16], xor_key_table)
+    def encrypt_data_block(pdata, xor_key_table, pkey):
+        encrypted_data = bytearray(pdata)
+        encrypted_data = xor_data_buffer(encrypted_data, str(xor_key_table), len(encrypted_data))
+
+        for i in range(1, 11):
+            swap_data_buffer(encrypted_data, len(encrypted_data))
+            shuffle_data_buffer(encrypted_data)
+            if i != 10:
+                encrypted_data = xor_data_block(encrypted_data)
+            encrypted_data = xor_data_buffer(encrypted_data, xor_key_table[i], len(encrypted_data))
+
         return encrypted_data
+
+    def encrypt_data_buffer(data, length, key, xor_key_table):
+        if isinstance(key, int):
+            key_int = [key] * 16
+        else:
+            key_int = [ord(c) for c in str(key)]
+
+        encrypted_data = bytearray(data)
+        for i in range(0, length, 16):
+            pdata = encrypted_data[i:i + 16]
+            xor_key_index = i // 16 % 11
+            encrypted_block = encrypt_data_block(pdata, xor_key_table[xor_key_index], key_int)
+            encrypted_data[i:i + 16] = encrypted_block
+        return encrypted_data
+
+    def rol_bytes(p):
+        t = p[0]
+        p[0] = p[1]
+        p[1] = p[2]
+        p[2] = p[3]
+        p[3] = t
+
+    def generate_xor_table(psz_key):
+        key_len = len(psz_key)
+        if key_len != 16:
+            return -1
+
+        xor_key_table[0][:key_len] = psz_key.encode()
+
+        for i in range(1, 11):
+            xor_data_buffer(xor_key_table[i - 1], str(xor_key_table[i - 1]), 16)
+            xor_key = 0
+            for j in range(4):
+                xor_key_table[i][4 * j:4 * (j + 1)] = xor_data_buffer(xor_key_table[i - 1][4 * j:4 * (j + 1)], str(xor_key_table[i - 1]), 4)
+                xor_key = xor_byte(xor_key & 0xFF)
+            rol_bytes(xor_key_table[i])
+            xor_data_buffer(xor_key_table[i], str(xor_key_table[i]), 16)
+
+        return xor_key_table
 
     def encrypt_file(input_file, output_file, key):
         if not os.path.exists(input_file):
@@ -128,16 +144,29 @@ if pioutil.is_pio_build():
         if os.path.exists(output_file):
             os.remove(output_file)
 
-        print(
-            f"Encoding binary {input_file} to file {output_file} with key: {key}"
-        )
+        print(f"Encoding binary {input_file} to file {output_file} using key: {key}")
+
+        key = str(key)
+
+        xor_key_table = generate_xor_table(key)
+        # print("XOR Key Table:")
+        # for i, table in enumerate(xor_key_table):
+        #     print(f"Table {i}: {table}")
+
         with open(input_file, "rb") as ifile, open(output_file, "wb") as ofile:
-            data = ifile.read()
-            encrypted_data = encrypt_data_buffer(data, len(data), key)
-            ofile.write(encrypted_data)
+            while True:
+                data = ifile.read(2048)
+                if not data:
+                    break
 
-        return encrypted_data
+                if len(data) < 16:
+                    data += bytes(16 - len(data))
 
+                encrypted_data = encrypt_data_buffer(data, len(data), key, xor_key_table)
+                ofile.write(encrypted_data)
+
+        print("Finished encoding")
+    
     def encrypt_flashforge(source, target, env):
        fwpath = target[0].path
        enname = board.get("build.encrypt_flashforge_bin")
@@ -148,8 +177,6 @@ if pioutil.is_pio_build():
 
        os.remove(fwpath)
 
-       print("Successfully encoded binary")
-
     if 'encrypt_flashforge_bin' in board.get("build").keys() and 'encrypt_flashforge_key' in board.get("build").keys():
        marlin.add_post_action(encrypt_flashforge)
     elif 'encrypt_flashforge_bin' in board.get("build").keys() and 'encrypt_flashforge_key' not in board.get("build").keys():
@@ -159,5 +186,5 @@ if pioutil.is_pio_build():
       print("board_build.encrypt_flashforge_key not specified.\n")
       exit(2)
     elif 'encrypt_flashforge_bin' not in board.get("build").keys() and 'encrypt_flashforge_key' not in board.get("build").keys():
-       print("neither board_build.encrypt_flashforge_bin or board_build.encrypt_flashforge_key specified.\n")
-       exit(3)
+      print("neither board_build.encrypt_flashforge_bin or board_build.encrypt_flashforge_key specified.\n")
+      exit(3)
