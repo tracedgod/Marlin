@@ -139,11 +139,11 @@ void TFT_IO::initTFT() {
         DEBUG_ECHO_MSG(" ILI9341");       // 320x240
         write_esc_sequence(ili9341_init);
         break;
-      case ILI9488:
-      case ILI9488_ID1:
-        DEBUG_ECHO_MSG(" ILI9488");       // 480x320
-        write_esc_sequence(ili9488_init);
-        break;
+        case ILI9488:
+        case ILI9488_ID1:
+          DEBUG_ECHO_MSG(" ILI9488");       // 480x320
+          write_esc_sequence(ili9488_init);
+          break;
       default:
         lcd_id = 0;
     }

@@ -88,7 +88,7 @@ thermosensor K-couple ADS1118
 #define PCA9632_RED      0x00
 #define PCA9632_GRN      0x04
 #define PCA9632_BLU      0x02
-#define PCA9632_ADDRESS  0b01100010 /* 7bit format, 8bit => 0xC4 */
+
 #define PCA9632_I2C_SCK                     PF12
 #define PCA9632_I2C_SDA                     PB1
 
@@ -104,20 +104,23 @@ thermosensor K-couple ADS1118
 #define BEEPER_PIN                          PB0 /* ( TIM3/CH3) */
 
 /* XPT2046 */
-#define TOUCH_INT_PIN                       PG10 /* optional ? */
-#define TOUCH_CS_PIN                        PG9
-/* SPI1 */
-#define TOUCH_SCK_PIN                       PA5
-#define TOUCH_MISO_PIN                      PA6
-#define TOUCH_MOSI_PIN                      PA7
+#if ENABLED(TFT_TOUCH_DEVICE_XPT2046)
+  #define TOUCH_INT_PIN                       PG10 /* optional ? */
+  #define TOUCH_CS_PIN                        PG9
+  /* SPI1 */
+  #define TOUCH_SCK_PIN                       PA5
+  #define TOUCH_MISO_PIN                      PA6
+  #define TOUCH_MOSI_PIN                      PA7
+#endif
 
-
-/* FSMC */
+/* FSMC (ILI9488) */
 #define TFT_CS_PIN                        PD7  /* NE1 */
 #define TFT_RS_PIN                        PD11 /* RS */
 #define TFT_BACKLIGHT_PIN                 PG11
 /* PIN is OK, but removed for test purpose */
 #define TFT_RESET_PIN                     PD13
+
+#define ILI9488_INVERTED        /* Invert Colors */
 
 // #if ENABLED( TFT_CLASSIC_UI )
 //   #define FSMC_CS_PIN                       PD7   /* NE1 */
@@ -229,19 +232,18 @@ thermosensor K-couple ADS1118
   #define SDCARD_CONNECTION              ONBOARD
 #endif
 
-// #if SD_CONNECTION_IS(ONBOARD)
-// 
-//   #define ONBOARD_SDIO                            // Use SDIO for onboard SD
-// 
-//   #if DISABLED(ONBOARD_SDIO)
-//     #define SOFTWARE_SPI                          // Use soft SPI for onboard SD
-//     #define SDSS                            PC11
-     #define SD_SCK_PIN                      PC12
-     #define SD_MISO_PIN                     PC8
-//     #define SD_MOSI_PIN                     PD2
-//   #endif
-// 
-// #endif
+#if SD_CONNECTION_IS(ONBOARD)
+
+  #define ONBOARD_SDIO                            // Use SDIO for onboard SD
+ 
+   #if DISABLED(ONBOARD_SDIO)
+    #define SOFTWARE_SPI                          // Use soft SPI for onboard SD
+    #define SDSS                            PC11
+    #define SD_SCK_PIN                      PC12
+    #define SD_MISO_PIN                     PC8
+    #define SD_MOSI_PIN                     PD2
+  #endif
+#endif
 
 /* external SD CARD */
 #define SDCARD_COMMANDS_SPLIT                    // enable Toshiba FlashAIR support
