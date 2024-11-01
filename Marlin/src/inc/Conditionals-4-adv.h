@@ -431,9 +431,7 @@
   #endif
 
   #if TEMP_SENSOR_1 != TEMP_SENSOR_0
-    #if   TEMP_SENSOR_1 == -6
-      #error "If ADS1118 Thermocouple (-6) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must match."
-    #elif   TEMP_SENSOR_1 == -5
+    #if   TEMP_SENSOR_1 == -5
       #error "If MAX31865 Thermocouple (-5) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must match."
     #elif TEMP_SENSOR_1 == -3
       #error "If MAX31855 Thermocouple (-3) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must match."
@@ -441,8 +439,6 @@
       #error "If MAX6675 Thermocouple (-2) is used for TEMP_SENSOR_1 then TEMP_SENSOR_0 must match."
     #endif
   #endif
-#elif TEMP_SENSOR_1 == -6
-  #define TEMP_SENSOR_1_IS_ADS1118 1
 #elif TEMP_SENSOR_1 == -4
   #define TEMP_SENSOR_1_IS_AD8495 1
 #elif TEMP_SENSOR_1 == -1
@@ -478,9 +474,7 @@
   #endif
 
   #if TEMP_SENSOR_2 != TEMP_SENSOR_0
-    #if TEMP_SENSOR_2 == -6
-      #error "If ADS1118 Thermocouple (-6) is used for TEMP_SENSOR_2 then TEMP_SENSOR_0 must match."
-    #elif   TEMP_SENSOR_2 == -5
+    #if   TEMP_SENSOR_2 == -5
       #error "If MAX31865 Thermocouple (-5) is used for TEMP_SENSOR_2 then TEMP_SENSOR_0 must match."
     #elif TEMP_SENSOR_2 == -3
       #error "If MAX31855 Thermocouple (-3) is used for TEMP_SENSOR_2 then TEMP_SENSOR_0 must match."

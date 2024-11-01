@@ -36,8 +36,6 @@
   #define THERMISTOR_NAME "User Parameters"
 
 // SPI RTD/Thermocouple Boards
-#elif THERMISTOR_ID == -6
-  #define THERMISTOR_NAME "ADS1118"
 #elif THERMISTOR_ID == -5
   #define THERMISTOR_NAME "MAX31865"
 #elif THERMISTOR_ID == -3

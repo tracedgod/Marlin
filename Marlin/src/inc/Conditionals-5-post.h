@@ -746,30 +746,6 @@
 #endif // HAS_MAX_TC
 
 /**
- * Compatibility layer for ADS1118 (SPI) temp boards
- */
-
-#if HAS_ADS1118
-
-  // Software SPI - enable if MISO/SCK are defined.
-    //#define TEMP_SENSOR_0_HAS_SPI_PINS 1
-    //#define TEMP_SENSOR_1_HAS_SPI_PINS 1
-    //#define TEMP_SENSOR_2_HAS_SPI_PINS 1
-    //#define TEMP_SENSOR_BED_HAS_SPI_PINS 1
-
-  //
-  // User-defined thermocouple libraries
-  //
-  // Add LIB_ADS1118 to the build_flags
-  // to select a USER library for ADS1118
-  //
-  #if ALL(HAS_ADS1118, LIB_ADS1118)
-    #define USE_LIB_ADS1118 1
-  #endif
-
-#endif  // HAS_ADS1118
-
-/**
  * X_DUAL_ENDSTOPS endstop reassignment
  */
 #if ENABLED(X_DUAL_ENDSTOPS)
