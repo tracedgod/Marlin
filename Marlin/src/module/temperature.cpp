@@ -2820,12 +2820,6 @@ void Temperature::updateTemperaturesFromRawValues() {
   #if TEMP_SENSOR_IS_MAX_TC(BED)
     temp_bed.setraw(read_max_tc_bed());
   #endif
-  #if TEMP_SENSOR_0_IS_ADS1118
-    temp_hotend[0].setraw(ads1118_read_raw(0));
-  #endif
-  #if TEMP_SENSOR_1_IS_ADS1118
-    temp_hotend[1].setraw(ads1118_read_raw(1));
-  #endif
 
   #if HAS_HOTEND
     HOTEND_LOOP() temp_hotend[e].celsius = analog_to_celsius_hotend(temp_hotend[e].getraw(), e);
